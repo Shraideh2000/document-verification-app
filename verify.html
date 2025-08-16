@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>توثيق المستند</title>
+  <style>
+    body {
+      font-family: "Tahoma", sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    /* شاشة اللودر */
+    .loader-screen {
+      text-align: center;
+    }
+
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #800000; /* عنابي */
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      font-size: 18px;
+      color: #800000;
+      font-weight: bold;
+    }
+
+    /* الكارت */
+    .card {
+      background: #fff;
+      padding: 0;
+      border-radius: 20px;
+      box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      display: none; /* مخفي بالبداية */
+      overflow: hidden;
+    }
+
+    /* الهيدر مع اللوجو */
+    .card-header {
+      background: #fff;
+      padding: 60px 25px 20px;
+      text-align: center;
+    }
+
+    .card-header img {
+      max-width: 160px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+
+    /* حالة التحقق - دائرة */
+    .status-icon {
+      font-size: 40px;              /* حجم علامة الصح */
+      color: #28a745;               /* لون العلامة */
+      background-color: #e6f4ea;    /* لون خلفية الدائرة */
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;           /* تجعلها دائرة */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;            /* مركزة الدائرة */
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .status-text {
+      font-size: 24px;
+      font-weight: bold;
+      color: #28a745;
+      margin-bottom: 20px;
+    }
+
+    /* زر التحميل */
+    .btn-download {
+      display: inline-block;
+      margin: 15px 0 25px 0;
+      padding: 12px 25px;
+      background: #800000;
+      color: #fff;
+      font-size: 15px;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+
+    .btn-download:hover {
+      background: #a00000;
+    }
+
+    /* بيانات المستند */
+    .doc-info {
+      text-align: right;
+      border-top: 1px solid #eee;
+      padding: 20px;
+    }
+
+    .doc-info p {
+      margin: 8px 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .doc-info strong {
+      color: #800000;
+    }
+  </style>
+</head>
+<body>
+  <!-- شاشة اللودر -->
+  <div class="loader-screen" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text">جاري التحقق...</div>
+  </div>
+
+  <!-- الكارت -->
+  <div class="card" id="card">
+    <div class="card-header">
+        <a href="https://www.mol.gov.qa/" target="_blank">
+            <img src="/img/mol.png" alt="Logo" id="logo">
+        </a>
+    </div>
+
+    <div class="status-icon">✔</div>
+    <div class="status-text">تم التحقق</div>
+
+    <a id="downloadLink" class="btn-download" download>تحميل المستند</a>
+
+    <div class="doc-info">
+        <p><strong>رقم المستند:</strong> {{doc_number}}</p>
+        <p><strong>نوع المستند:</strong> {{doc_type}}</p>
+        <p><strong>الطرف الأول:</strong> {{party_one}} (ID: {{party_one_id}})</p>
+        <p><strong>الطرف الثاني:</strong> {{party_two}} (ID: {{party_two_id}})</p>
+        <p><strong>الحالة:</strong> {{status}}</p>
+        <p><strong>تاريخ الإصدار:</strong> {{issue_date}}</p>
+    </div>
+  </div>
+
+  <script>
+    // نخلي اللودر يبين 4 ثواني قبل إظهار البيانات
+    setTimeout(() => {
+      document.getElementById("loader").style.display = "none";
+      document.getElementById("card").style.display = "block";
+    }, 4000);
+  </script>
+</body>
+</html>
