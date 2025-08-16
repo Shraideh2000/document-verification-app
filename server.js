@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // الاتصال بقاعدة البيانات عبر متغير بيئة
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
 });
 
 // اختبار الاتصال بقاعدة البيانات
