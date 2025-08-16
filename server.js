@@ -3,7 +3,9 @@ import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+// import dotenv from "dotenv";
 
+// dotenv.config();
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +20,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // الاتصال بقاعدة البيانات عبر متغير بيئة
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: true
 });
 
 // اختبار الاتصال بقاعدة البيانات
