@@ -29,7 +29,7 @@ pool.connect()
 // 📌 مسار الصفحة الرئيسية
 // هذا المسار سيعرض صفحة 'verify.html' عندما يفتح المستخدم رابط التطبيق
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "verify.html"));
+  res.sendFile(path.join(__dirname, "public", "verify.html"));
 });
 
 // 📌 راوت التحقق
@@ -47,7 +47,7 @@ app.get("/verify/:token", async (req, res) => {
     }
 
     const document = result.rows[0];
-    const htmlPath = path.join(__dirname, "verify.html");
+    const htmlPath = path.join(__dirname, "public", "verify.html");
     let html = fs.readFileSync(htmlPath, "utf8");
 
     // 📝 استبدال البيانات
