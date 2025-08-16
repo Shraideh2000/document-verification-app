@@ -4,24 +4,32 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// تهيئة تطبيق Express
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ✅ خدمة الملفات الثابتة (لازم يكون قبل أي راوت)
+// خدمة الملفات الثابتة من مجلد 'public'
 app.use(express.static(path.join(__dirname, "public")));
 
-// 📌 الاتصال بقاعدة البيانات مباشرة
-// 📌 الاتصال بقاعدة البيانات عبر متغير بيئة
+// الاتصال بقاعدة البيانات عبر متغير بيئة
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// اختبار الاتصال بقاعدة البيانات
 pool.connect()
   .then(() => console.log("✅ Database connected successfully!"))
   .catch((err) => console.error("❌ Database connection error:", err));
+
+// 📌 مسار الصفحة الرئيسية
+// هذا المسار سيعرض صفحة 'verify.html' عندما يفتح المستخدم رابط التطبيق
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "verify.html"));
+});
 
 // 📌 راوت التحقق
 app.get("/verify/:token", async (req, res) => {
@@ -59,4 +67,6 @@ app.get("/verify/:token", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+// تشغيل الخادم
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+ 
