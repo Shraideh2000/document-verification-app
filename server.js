@@ -69,4 +69,3 @@ app.get("/verify/:token", async (req, res) => {
 
 // تشغيل الخادم
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
- 
