@@ -3,6 +3,10 @@ import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+// تهيئة dotenv لقراءة متغيرات البيئة المحلية
+dotenv.config();
 
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
@@ -10,29 +14,23 @@ const __dirname = path.dirname(__filename);
 
 // تهيئة تطبيق Express
 const app = express();
+// استخدام متغير البيئة للمنفذ، أو 3000 كقيمة افتراضية
 const PORT = process.env.PORT || 3000;
 
 // خدمة الملفات الثابتة من مجلد 'public'
+// هذا السطر سيتعامل مع ملف 'verify.html' تلقائيًا
 app.use(express.static(path.join(__dirname, "public")));
-
-// ✅ قراءة HTML مرة واحدة عند بدء السيرفر
-const htmlTemplate = fs.readFileSync(path.join(__dirname, "public", "verify.html"), "utf8");
 
 // الاتصال بقاعدة البيانات عبر متغير بيئة
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: true  // أو { rejectUnauthorized: false } إذا SSL يسبب مشكلة
+  ssl: { rejectUnauthorized: false }
 });
 
-// اختبار الاتصال بقاعدة البيانات
-pool.query("SELECT NOW()")
-  .then(res => console.log("✅ Database connected successfully:", res.rows[0]))
-  .catch(err => console.error("❌ Database connection error:", err));
-
-// 📌 مسار الصفحة الرئيسية
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "verify.html"));
-});
+// اختبار الاتصال بقاعدة البيانات عند بدء التشغيل
+pool.connect()
+  .then(() => console.log("✅ Database connected successfully!"))
+  .catch((err) => console.error("❌ Database connection error:", err));
 
 // 📌 راوت التحقق
 app.get("/verify/:token", async (req, res) => {
@@ -49,7 +47,8 @@ app.get("/verify/:token", async (req, res) => {
     }
 
     const document = result.rows[0];
-    let html = htmlTemplate;
+    const htmlPath = path.join(__dirname, "public", "verify.html");
+    let html = fs.readFileSync(htmlPath, "utf8");
 
     // 📝 استبدال البيانات
     html = html.replace(/{{doc_number}}/g, document.doc_number || "-");
@@ -70,6 +69,7 @@ app.get("/verify/:token", async (req, res) => {
 });
 
 // تشغيل الخادم
+// الاستماع على '0.0.0.0' ضروري لبيئات الاستضافة مثل Railway
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
