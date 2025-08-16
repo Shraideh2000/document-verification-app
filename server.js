@@ -3,10 +3,10 @@ import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-// import dotenv from "dotenv";
+import dotenv from "dotenv";
 
 // تهيئة dotenv لقراءة متغيرات البيئة المحلية
-// dotenv.config();
+dotenv.config();
 
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +24,13 @@ app.use(express.static(path.join(__dirname, "public")));
 // الاتصال بقاعدة البيانات عبر متغير بيئة
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  // 📌 الحل: تعديل إعدادات SSL
+  ssl: {
+    rejectUnauthorized: false,
+    // إضافة هذا السطر قد يحل مشكلة مع بعض إصدارات Node.js
+    // Caused by "client_encoding" missing from the connection string
+    // sslmode: 'require' 
+  },
 });
 
 // اختبار الاتصال بقاعدة البيانات عند بدء التشغيل
