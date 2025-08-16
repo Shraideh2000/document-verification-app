@@ -3,10 +3,10 @@ import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 
 // تهيئة dotenv لقراءة متغيرات البيئة المحلية
-dotenv.config();
+// dotenv.config();
 
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
