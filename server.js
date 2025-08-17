@@ -20,7 +20,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.static(path.join(__dirname, "public")));
 // 🎯 إضافة هذا السطر الجديد لقراءة بيانات النموذج بشكل صحيح
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// ❌ تم إزالة app.use(express.json());
+// app.use(express.json());
 
 // 📌 إعدادات Firebase - يجب إضافتها في Railway
 const firebaseConfig = {
