@@ -1,11 +1,12 @@
 import express from "express";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDoc, doc, query, where } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto"; // 📌 استيراد مكتبة crypto لتوليد توكن عشوائي
 
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +37,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
 
+console.log("✅ Firebase services initialized successfully."); // 🎯 إضافة هذا السطر للتحقق من الاتصال
+
 // 📌 راوت الصفحة الرئيسية
 app.get("/", (req, res) => {
     res.send("<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>");
@@ -53,6 +56,7 @@ app.get("/verify/:token", async (req, res) => {
     console.log("🔎 Received request for token:", token);
 
     try {
+        // 🎯 البحث عن المستند باستخدام التوكن
         const documentsRef = collection(db, "documents");
         const q = query(documentsRef, where("verify_token", "==", token));
         const querySnapshot = await getDocs(q);
@@ -75,6 +79,7 @@ app.get("/verify/:token", async (req, res) => {
         html = html.replace(/{{file_url}}/g, document.file_url || "#");
         html = html.replace(/{{party_one_id}}/g, document.party_one_id || "-");
         html = html.replace(/{{party_two_id}}/g, document.party_two_id || "-");
+        html = html.replace(/{{verify_token}}/g, document.verify_token || "-");
 
         res.send(html);
     } catch (err) {
@@ -85,7 +90,7 @@ app.get("/verify/:token", async (req, res) => {
 
 // 📌 راوت إضافة مستند جديد
 app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
-    const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, verify_token } = req.body;
+    const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -93,6 +98,7 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
     }
 
     let fileUrl = null;
+    let verify_token = crypto.randomBytes(20).toString('hex'); // 🎯 توليد توكن تلقائي
 
     try {
         // 📤 رفع الملف إلى Firebase Storage
@@ -111,13 +117,13 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
             file_url: fileUrl,
             party_one_id,
             party_two_id,
-            verify_token
+            verify_token // 📌 إضافة التوكن الذي تم توليده
         };
 
         await addDoc(collection(db, "documents"), docData);
         
         console.log("✅ Document added successfully!");
-        res.status(200).send("Document added successfully!");
+        res.status(200).send(`Document added successfully! Token: ${verify_token}`); // إرسال التوكن في الرد
 
     } catch (error) {
         console.error("❌ Error adding document:", error);
