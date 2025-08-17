@@ -17,23 +17,15 @@ const PORT = process.env.PORT || 3000;
 // هذا السطر سيتعامل مع ملف 'verify.html' تلقائيًا
 app.use(express.static(path.join(__dirname, "public")));
 
-// 📌 الاتصال بقاعدة البيانات عبر متغير بيئة (الطريقة الآمنة)
+// 📌 الاتصال بقاعدة البيانات عبر سلسلة الاتصال المباشرة
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  connectionString: 'postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
 });
 
 // اختبار الاتصال بقاعدة البيانات عند بدء التشغيل
 pool.connect()
   .then(() => console.log("✅ Database connected successfully!"))
   .catch((err) => console.error("❌ Database connection error:", err));
-
-// 📌 راوت الصفحة الرئيسية (الجديد)
-app.get("/", (req, res) => {
-  res.send("<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>");
-});
 
 // 📌 راوت التحقق
 app.get("/verify/:token", async (req, res) => {
