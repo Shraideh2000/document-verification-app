@@ -1,6 +1,5 @@
 import express from "express";
 import { initializeApp } from "firebase/app";
-// 🎯 تم إضافة getDocs هنا
 import { getFirestore, collection, addDoc, getDoc, doc, query, where, getDocs } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import multer from "multer";
@@ -58,7 +57,8 @@ app.get("/verify/:token", async (req, res) => {
     try {
         // 🎯 البحث عن المستند باستخدام التوكن
         const documentsRef = collection(db, "documents");
-        const q = query(documentsRef, where("verify_token", "==", token));
+        // 🔑 استخدام toUpperCase() لجعل الاستعلام غير حساس لحالة الأحرف
+        const q = query(documentsRef, where("verify_token", "==", token.toUpperCase()));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -90,6 +90,7 @@ app.get("/verify/:token", async (req, res) => {
 
 // 📌 راوت إضافة مستند جديد
 app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
+    // 🎯 استخدام .trim() لإزالة المسافات الزائدة
     const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id } = req.body;
     const file = req.file;
 
@@ -98,7 +99,7 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
     }
 
     let fileUrl = null;
-    let verify_token = crypto.randomBytes(20).toString('hex');
+    let verify_token = crypto.randomBytes(20).toString('hex').toUpperCase();
 
     try {
         // 📤 رفع الملف إلى Firebase Storage
@@ -108,15 +109,15 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
 
         // 💾 تخزين البيانات في Firestore
         const docData = {
-            doc_number,
-            doc_type,
-            party_one,
-            party_two,
-            status,
-            issue_date,
+            doc_number: doc_number.trim(),
+            doc_type: doc_type.trim(),
+            party_one: party_one.trim(),
+            party_two: party_two.trim(),
+            status: status.trim(),
+            issue_date: issue_date.trim(),
             file_url: fileUrl,
-            party_one_id,
-            party_two_id,
+            party_one_id: party_one_id.trim(),
+            party_two_id: party_two_id.trim(),
             verify_token
         };
 
