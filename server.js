@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 // ❌ تم إزالة app.use(express.json());
 // app.use(express.json());
 
-// 📌 إعدادات Firebase - يجب إضافتها في Railway
+// � إعدادات Firebase - يجب إضافتها في Railway
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -75,7 +75,7 @@ app.get("/verify/:token", async (req, res) => {
         html = html.replace(/{{party_one}}/g, document.party_one || "-");
         html = html.replace(/{{party_two}}/g, document.party_two || "-");
         html = html.replace(/{{status}}/g, document.status || "-");
-        // استخدام Timestamp لضمان التوافق مع Firestore
+        // 🎯 فحص issue_date قبل تحويله
         html = html.replace(/{{issue_date}}/g, document.issue_date?.toDate()?.toLocaleDateString("ar-EG") || "-");
         // تم تغيير file_url إلى قيمة ثابتة
         html = html.replace(/{{file_url}}/g, "لا يوجد ملف مرفق"); 
@@ -109,6 +109,7 @@ app.post("/add-document", async (req, res) => {
             party_one: party_one ? party_one.trim() : '',
             party_two: party_two ? party_two.trim() : '',
             status: status ? status.trim() : '',
+            // 🎯 استخدام Timestamp لضمان التوافق مع Firestore
             issue_date: issue_date ? Timestamp.fromDate(new Date(issue_date)) : Timestamp.now(),
             file_url: "لا يوجد ملف مرفق", // قيمة ثابتة
             party_one_id: party_one_id ? party_one_id.trim() : '',
