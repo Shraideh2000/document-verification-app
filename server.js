@@ -1,5 +1,8 @@
 import express from "express";
-import { Pool } from "pg";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,71 +15,53 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware لتحميل الملفات
+const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
 
-// 📌 الاتصال بقاعدة البيانات عبر متغير بيئة (أكثر أمانًا)
-const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// 📌 إعدادات Firebase - يجب إضافتها في Railway
+// ❗ تأكد من نسخها من لوحة تحكم Firebase الخاصة بك
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
+};
 
-let pool;
-let retryCount = 0;
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 2000; // 2 seconds
-
-// 🎯 دالة الاتصال بقاعدة البيانات مع آلية إعادة المحاولة
-async function connectToDatabase() {
-    try {
-        console.log("🟡 Attempting to connect to the database...");
-        pool = new Pool({
-            connectionString: connectionString,
-            ssl: { rejectUnauthorized: false },
-        });
-
-        await pool.connect();
-        console.log("✅ Database connected successfully!");
-    } catch (err) {
-        console.error(`❌ Initial database connection error: ${err.message}`);
-        if (retryCount < MAX_RETRIES) {
-            retryCount++;
-            const delay = RETRY_DELAY * retryCount;
-            console.log(`⏱️ Retrying connection in ${delay / 1000} seconds... (Attempt ${retryCount}/${MAX_RETRIES})`);
-            setTimeout(connectToDatabase, delay);
-        } else {
-            console.error("⛔ Max retries reached. Exiting application.");
-            // يمكنك هنا إرسال إشعار أو تسجيل خطأ حرج
-            process.exit(1); // إغلاق التطبيق إذا فشل الاتصال تمامًا
-        }
-    }
-}
-
-// البدء بالاتصال عند تشغيل الخادم
-connectToDatabase();
+// تهيئة Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const storage = getStorage(firebaseApp);
 
 // 📌 راوت الصفحة الرئيسية
 app.get("/", (req, res) => {
     res.send("<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>");
 });
 
+// 📌 راوت الواجهة الإدارية
+app.get("/admin", (req, res) => {
+    const adminPath = path.join(__dirname, "public", "admin.html");
+    res.sendFile(adminPath);
+});
+
 // 📌 راوت التحقق
 app.get("/verify/:token", async (req, res) => {
-    // تحقق من وجود الاتصال قبل محاولة الاستعلام
-    if (!pool) {
-        console.log("⚠️ No database connection. Returning service unavailable.");
-        return res.status(503).send("<h1 style='color:orange'>الخدمة غير متوفرة حالياً، يرجى المحاولة لاحقاً.</h1>");
-    }
-
     const token = req.params.token;
     console.log("🔎 Received request for token:", token);
 
     try {
-        const query = "SELECT * FROM documents WHERE verify_token = $1 LIMIT 1";
-        const result = await pool.query(query, [token]);
-        console.log("📦 Query result:", result.rows);
+        const documentsRef = collection(db, "documents");
+        const q = query(documentsRef, where("verify_token", "==", token));
+        const querySnapshot = await getDocs(q);
 
-        if (result.rows.length === 0) {
-            return res.send("<h1 style='color:red'>المستند غير موجود</h1>");
+        if (querySnapshot.empty) {
+            return res.status(404).send("<h1 style='color:red'>المستند غير موجود</h1>");
         }
 
-        const document = result.rows[0];
+        const document = querySnapshot.docs[0].data();
         const htmlPath = path.join(__dirname, "public", "verify.html");
         let html = fs.readFileSync(htmlPath, "utf8");
 
@@ -95,6 +80,48 @@ app.get("/verify/:token", async (req, res) => {
     } catch (err) {
         console.error("❌ Error fetching document:", err);
         res.status(500).send("<h1 style='color:red'>حدث خطأ في الاتصال</h1>");
+    }
+});
+
+// 📌 راوت إضافة مستند جديد
+app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
+    const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, verify_token } = req.body;
+    const file = req.file;
+
+    if (!file) {
+        return res.status(400).send("No file uploaded.");
+    }
+
+    let fileUrl = null;
+
+    try {
+        // 📤 رفع الملف إلى Firebase Storage
+        const fileRef = ref(storage, `documents/${file.originalname}_${Date.now()}`);
+        await uploadBytes(fileRef, file.buffer);
+        fileUrl = await getDownloadURL(fileRef);
+
+        // 💾 تخزين البيانات في Firestore
+        const docData = {
+            doc_number,
+            doc_type,
+            party_one,
+            party_two,
+            status,
+            issue_date,
+            file_url: fileUrl,
+            party_one_id,
+            party_two_id,
+            verify_token
+        };
+
+        await addDoc(collection(db, "documents"), docData);
+        
+        console.log("✅ Document added successfully!");
+        res.status(200).send("Document added successfully!");
+
+    } catch (error) {
+        console.error("❌ Error adding document:", error);
+        res.status(500).send("An error occurred while adding the document.");
     }
 });
 
