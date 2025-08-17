@@ -1,6 +1,6 @@
 import express from "express";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDoc, doc, query, where, getDocs, Timestamp } from "firebase/firestore";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
@@ -75,7 +75,8 @@ app.get("/verify/:token", async (req, res) => {
         html = html.replace(/{{party_one}}/g, document.party_one || "-");
         html = html.replace(/{{party_two}}/g, document.party_two || "-");
         html = html.replace(/{{status}}/g, document.status || "-");
-        html = html.replace(/{{issue_date}}/g, new Date(document.issue_date).toLocaleDateString("ar-EG"));
+        // استخدام Timestamp لضمان التوافق مع Firestore
+        html = html.replace(/{{issue_date}}/g, document.issue_date?.toDate()?.toLocaleDateString("ar-EG") || "-");
         // تم تغيير file_url إلى قيمة ثابتة
         html = html.replace(/{{file_url}}/g, "لا يوجد ملف مرفق"); 
         html = html.replace(/{{party_one_id}}/g, document.party_one_id || "-");
@@ -108,7 +109,7 @@ app.post("/add-document", async (req, res) => {
             party_one: party_one ? party_one.trim() : '',
             party_two: party_two ? party_two.trim() : '',
             status: status ? status.trim() : '',
-            issue_date: issue_date ? Timestamp.fromDate(new Date(issue_date)) : Timestamp.fromDate(new Date()),
+            issue_date: issue_date ? Timestamp.fromDate(new Date(issue_date)) : Timestamp.now(),
             file_url: "لا يوجد ملف مرفق", // قيمة ثابتة
             party_one_id: party_one_id ? party_one_id.trim() : '',
             party_two_id: party_two_id ? party_two_id.trim() : '',
