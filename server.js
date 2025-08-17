@@ -1,7 +1,6 @@
 import express from "express";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDoc, doc, query, where, getDocs } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
@@ -16,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware لتحميل الملفات
+// Middleware لتحميل الملفات (تم إبقاؤه لمتطلبات multer، لكن لن يتم استخدامه)
 const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
@@ -26,7 +25,7 @@ const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
   projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  // تمت إزالة storageBucket
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.FIREBASE_APP_ID
 };
@@ -34,8 +33,7 @@ const firebaseConfig = {
 // تهيئة Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
-const storage = getStorage(firebaseApp);
-
+// تمت إزالة storage
 console.log("✅ Firebase services initialized successfully.");
 
 // 📌 راوت الصفحة الرئيسية
@@ -75,7 +73,8 @@ app.get("/verify/:token", async (req, res) => {
         html = html.replace(/{{party_two}}/g, document.party_two || "-");
         html = html.replace(/{{status}}/g, document.status || "-");
         html = html.replace(/{{issue_date}}/g, new Date(document.issue_date).toLocaleDateString("ar-EG"));
-        html = html.replace(/{{file_url}}/g, document.file_url || "#");
+        // تم تغيير file_url إلى قيمة ثابتة
+        html = html.replace(/{{file_url}}/g, "لا يوجد ملف مرفق"); 
         html = html.replace(/{{party_one_id}}/g, document.party_one_id || "-");
         html = html.replace(/{{party_two_id}}/g, document.party_two_id || "-");
         html = html.replace(/{{verify_token}}/g, document.verify_token || "-");
@@ -88,23 +87,16 @@ app.get("/verify/:token", async (req, res) => {
 });
 
 // 📌 راوت إضافة مستند جديد
-app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
-    // 🎯 إضافة فحص لكل متغير قبل تطبيق trim()
+// تمت إزالة 'upload.single' لأنه لم يعد هناك ملف
+app.post("/add-document", async (req, res) => {
     const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id } = req.body;
-    const file = req.file;
 
-    if (!file) {
-        return res.status(400).send("No file uploaded.");
-    }
-
-    let fileUrl = null;
+    // تم إزالة فحص الملف
+    
     let verify_token = crypto.randomBytes(20).toString('hex').toUpperCase();
 
     try {
-        // 📤 رفع الملف إلى Firebase Storage
-        const fileRef = ref(storage, `documents/${file.originalname}_${Date.now()}`);
-        await uploadBytes(fileRef, file.buffer);
-        fileUrl = await getDownloadURL(fileRef);
+        // تم إزالة عملية رفع الملف إلى Firebase Storage
 
         // 💾 تخزين البيانات في Firestore مع فحص القيمة
         const docData = {
@@ -114,7 +106,7 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
             party_two: party_two ? party_two.trim() : '',
             status: status ? status.trim() : '',
             issue_date: issue_date ? issue_date.trim() : '',
-            file_url: fileUrl,
+            file_url: "لا يوجد ملف مرفق", // قيمة ثابتة
             party_one_id: party_one_id ? party_one_id.trim() : '',
             party_two_id: party_two_id ? party_two_id.trim() : '',
             verify_token
