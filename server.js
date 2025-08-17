@@ -14,28 +14,35 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // خدمة الملفات الثابتة من مجلد 'public'
-// هذا السطر سيتعامل مع ملف 'verify.html' تلقائيًا
 app.use(express.static(path.join(__dirname, "public")));
 
 // 📌 الاتصال بقاعدة البيانات عبر متغير بيئة
-// إذا لم يكن متغير البيئة موجودًا، استخدم سلسلة الاتصال المباشرة كاحتياطي
-const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const connectionString =
+  process.env.DATABASE_URL ||
+  "postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
+  keepAlive: true,
 });
 
 // اختبار الاتصال بقاعدة البيانات عند بدء التشغيل
-pool.connect()
+pool
+  .query("SELECT 1")
   .then(() => console.log("✅ Database connected successfully!"))
   .catch((err) => console.error("❌ Database connection error:", err));
 
+// مهم: عالج أي error عالـ pool عشان ما يكرش السيرفر
+pool.on("error", (err) => {
+  console.error("❌ Unexpected error on idle client", err);
+});
+
 // 📌 راوت الصفحة الرئيسية
 app.get("/", (req, res) => {
-  res.send("<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>");
+  res.send(
+    "<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>"
+  );
 });
 
 // 📌 راوت التحقق
@@ -62,7 +69,10 @@ app.get("/verify/:token", async (req, res) => {
     html = html.replace(/{{party_one}}/g, document.party_one || "-");
     html = html.replace(/{{party_two}}/g, document.party_two || "-");
     html = html.replace(/{{status}}/g, document.status || "-");
-    html = html.replace(/{{issue_date}}/g, new Date(document.issue_date).toLocaleDateString("ar-EG"));
+    html = html.replace(
+      /{{issue_date}}/g,
+      new Date(document.issue_date).toLocaleDateString("ar-EG")
+    );
     html = html.replace(/{{file_url}}/g, document.file_url || "#");
     html = html.replace(/{{party_one_id}}/g, document.party_one_id || "-");
     html = html.replace(/{{party_two_id}}/g, document.party_two_id || "-");
@@ -75,7 +85,6 @@ app.get("/verify/:token", async (req, res) => {
 });
 
 // تشغيل الخادم
-// الاستماع على '0.0.0.0' ضروري لبيئات الاستضافة مثل Railway
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
