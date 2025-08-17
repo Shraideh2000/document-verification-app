@@ -17,16 +17,9 @@ const PORT = process.env.PORT || 3000;
 // هذا السطر سيتعامل مع ملف 'verify.html' تلقائيًا
 app.use(express.static(path.join(__dirname, "public")));
 
-// الاتصال بقاعدة البيانات عبر متغير بيئة
+// 📌 الاتصال بقاعدة البيانات عبر سلسلة الاتصال المباشرة
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // 📌 الحل: تعديل إعدادات SSL
-  ssl: {
-    rejectUnauthorized: false,
-    // إضافة هذا السطر قد يحل مشكلة مع بعض إصدارات Node.js
-    // Caused by "client_encoding" missing from the connection string
-    // sslmode: 'require' 
-  },
+  connectionString: 'postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
 });
 
 // اختبار الاتصال بقاعدة البيانات عند بدء التشغيل
