@@ -55,10 +55,12 @@ app.get("/verify/:token", async (req, res) => {
     console.log("🔎 Received request for token:", token);
 
     try {
+        // 🎯 تحويل التوكن إلى حروف كبيرة قبل الاستعلام
+        const uppercaseToken = token.toUpperCase();
+        
         // 🎯 البحث عن المستند باستخدام التوكن
         const documentsRef = collection(db, "documents");
-        // 🔑 استخدام toUpperCase() لجعل الاستعلام غير حساس لحالة الأحرف
-        const q = query(documentsRef, where("verify_token", "==", token.toUpperCase()));
+        const q = query(documentsRef, where("verify_token", "==", uppercaseToken));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -90,7 +92,6 @@ app.get("/verify/:token", async (req, res) => {
 
 // 📌 راوت إضافة مستند جديد
 app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
-    // 🎯 استخدام .trim() لإزالة المسافات الزائدة
     const { doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id } = req.body;
     const file = req.file;
 
