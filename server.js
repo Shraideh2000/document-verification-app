@@ -108,7 +108,7 @@ app.post("/add-document", async (req, res) => {
             party_one: party_one ? party_one.trim() : '',
             party_two: party_two ? party_two.trim() : '',
             status: status ? status.trim() : '',
-            issue_date: issue_date ? issue_date.trim() : '',
+            issue_date: issue_date ? Timestamp.fromDate(new Date(issue_date)) : Timestamp.fromDate(new Date()),
             file_url: "لا يوجد ملف مرفق", // قيمة ثابتة
             party_one_id: party_one_id ? party_one_id.trim() : '',
             party_two_id: party_two_id ? party_two_id.trim() : '',
