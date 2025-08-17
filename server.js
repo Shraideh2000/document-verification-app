@@ -1,12 +1,13 @@
 import express from "express";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDoc, doc, query, where } from "firebase/firestore";
+// 🎯 تم إضافة getDocs هنا
+import { getFirestore, collection, addDoc, getDoc, doc, query, where, getDocs } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import crypto from "crypto"; // 📌 استيراد مكتبة crypto لتوليد توكن عشوائي
+import crypto from "crypto";
 
 // مسارات Node.js
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +23,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
 // 📌 إعدادات Firebase - يجب إضافتها في Railway
-// ❗ تأكد من نسخها من لوحة تحكم Firebase الخاصة بك
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -37,7 +37,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
 
-console.log("✅ Firebase services initialized successfully."); // 🎯 إضافة هذا السطر للتحقق من الاتصال
+console.log("✅ Firebase services initialized successfully.");
 
 // 📌 راوت الصفحة الرئيسية
 app.get("/", (req, res) => {
@@ -98,7 +98,7 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
     }
 
     let fileUrl = null;
-    let verify_token = crypto.randomBytes(20).toString('hex'); // 🎯 توليد توكن تلقائي
+    let verify_token = crypto.randomBytes(20).toString('hex');
 
     try {
         // 📤 رفع الملف إلى Firebase Storage
@@ -117,13 +117,13 @@ app.post("/add-document", upload.single('pdfFile'), async (req, res) => {
             file_url: fileUrl,
             party_one_id,
             party_two_id,
-            verify_token // 📌 إضافة التوكن الذي تم توليده
+            verify_token
         };
 
         await addDoc(collection(db, "documents"), docData);
         
         console.log("✅ Document added successfully!");
-        res.status(200).send(`Document added successfully! Token: ${verify_token}`); // إرسال التوكن في الرد
+        res.status(200).send(`Document added successfully! Token: ${verify_token}`);
 
     } catch (error) {
         console.error("❌ Error adding document:", error);
