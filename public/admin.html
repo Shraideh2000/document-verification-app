@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إضافة مستند جديد</title>
+    <title>إدارة المستندات</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
@@ -13,63 +12,167 @@
             background-color: #f3f4f6;
             direction: rtl;
         }
+        .container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            ring-2: 0.25rem;
+            ring-blue-500: #3b82f6;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background-color: #3b82f6;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background-color: #2563eb;
+        }
+        .message-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        .message-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">إضافة مستند جديد</h1>
-
-        <form id="addDocumentForm" action="/add-document" method="POST" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="doc_number" class="block text-sm font-medium text-gray-700">رقم المستند</label>
-                    <input type="text" id="doc_number" name="doc_number" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
-                <div>
-                    <label for="doc_type" class="block text-sm font-medium text-gray-700">نوع المستند</label>
-                    <input type="text" id="doc_type" name="doc_type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
+    <div class="container">
+        <div class="header">
+            <h1>إضافة مستند جديد</h1>
+        </div>
+        <form id="documentForm" action="/add-document" method="POST">
+            <div class="form-group">
+                <label for="doc_number">رقم المستند:</label>
+                <input type="text" id="doc_number" name="doc_number" required>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="party_one" class="block text-sm font-medium text-gray-700">الطرف الأول</label>
-                    <input type="text" id="party_one" name="party_one" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
-                <div>
-                    <label for="party_two" class="block text-sm font-medium text-gray-700">الطرف الثاني</label>
-                    <input type="text" id="party_two" name="party_two" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
+            <div class="form-group">
+                <label for="doc_type">نوع المستند:</label>
+                <input type="text" id="doc_type" name="doc_type" required>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="party_one_id" class="block text-sm font-medium text-gray-700">هوية الطرف الأول</label>
-                    <input type="text" id="party_one_id" name="party_one_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
-                <div>
-                    <label for="party_two_id" class="block text-sm font-medium text-gray-700">هوية الطرف الثاني</label>
-                    <input type="text" id="party_two_id" name="party_two_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
+            <div class="form-group">
+                <label for="party_one">الطرف الأول:</label>
+                <input type="text" id="party_one" name="party_one" required>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700">الحالة</label>
-                    <input type="text" id="status" name="status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
-                <div>
-                    <label for="issue_date" class="block text-sm font-medium text-gray-700">تاريخ الإصدار</label>
-                    <input type="date" id="issue_date" name="issue_date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-3 border">
-                </div>
+            <div class="form-group">
+                <label for="party_two">الطرف الثاني:</label>
+                <input type="text" id="party_two" name="party_two" required>
             </div>
-
-            <div class="flex justify-center">
-                <button type="submit" class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
-                    <i class="fas fa-upload ml-2"></i> إضافة المستند
-                </button>
+            <div class="form-group">
+                <label for="status">الحالة:</label>
+                <select id="status" name="status" required>
+                    <option value="Valid">Valid</option>
+                    <option value="Invalid">Invalid</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label for="issue_date">تاريخ الإصدار:</label>
+                <input type="date" id="issue_date" name="issue_date" required>
+            </div>
+            <div class="form-group">
+                <label for="party_one_id">هوية الطرف الأول:</label>
+                <input type="text" id="party_one_id" name="party_one_id" required>
+            </div>
+            <div class="form-group">
+                <label for="party_two_id">هوية الطرف الثاني:</label>
+                <input type="text" id="party_two_id" name="party_two_id" required>
+            </div>
+            <div class="form-group">
+                <label for="verify_token">رمز التحقق (اختياري، سيتم إنشاؤه تلقائيًا):</label>
+                <input type="text" id="verify_token" name="verify_token">
+            </div>
+            <button type="submit" class="btn-submit">إضافة</button>
         </form>
+        <div id="messageBox" class="message-box"></div>
     </div>
+
+    <script>
+        const form = document.getElementById('documentForm');
+        const messageBox = document.getElementById('messageBox');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/add-document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(data).toString(),
+                });
+                
+                const result = await response.text();
+                
+                if (response.ok) {
+                    messageBox.textContent = result;
+                    messageBox.classList.remove('message-error');
+                    messageBox.classList.add('message-success');
+                    messageBox.style.display = 'block';
+                    form.reset();
+                } else {
+                    messageBox.textContent = result;
+                    messageBox.classList.remove('message-success');
+                    messageBox.classList.add('message-error');
+                    messageBox.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                messageBox.textContent = 'حدث خطأ غير متوقع.';
+                messageBox.classList.remove('message-success');
+                messageBox.classList.add('message-error');
+                messageBox.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>
