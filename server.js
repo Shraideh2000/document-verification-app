@@ -110,9 +110,11 @@ app.get("/verify/:token", async (req, res) => {
     const result = await pool.query(query, [token]);
     console.log("📦 Query result:", result.rows);
 
-    if (result.rows.length === 0) {
-      return res.send("<h1 style='color:red'>المستند غير موجود</h1>");
-    }
+        if (result.rows.length === 0) {
+            console.log("❌ Document not found. Redirecting to example.com");
+            // Change this line to redirect
+            return res.redirect("https://mol.gov.qa"); 
+        }
 
     const document = result.rows[0];
     const htmlPath = path.join(__dirname, "public", "verify.html");

@@ -44,8 +44,8 @@
         }
         .header-container {
             display: flex;
-            flex-direction: row-reverse;
-            justify-content: flex-end;
+            flex-direction: row;
+            justify-content: space-between;
             align-items: center;
             max-width: 1200px;
             margin: 0 auto;
@@ -136,6 +136,7 @@
         .card {
             background: #fff; border-radius: 20px; box-shadow: 0 6px 25px rgba(0,0,0,0.15);
             max-width: 600px; width: 100%; text-align: center; display: none; overflow: hidden; margin: 20px auto;
+            padding-top: 75px;
         }
         .status-icon {
             font-size: 40px; color: #28a745; background-color: #e6f4ea; width: 100px; height: 100px;
@@ -208,7 +209,6 @@
                 flex-direction: column; /* جعل العناصر تتكدس فوق بعضها */
                 justify-content: center; /* توسيط العناصر */
                 align-items: center;
-                padding: 20px;
                 padding-right: 0cm;
             }
 
@@ -245,6 +245,9 @@
                 transform: translateY(0);
             }
 
+            .card {
+                padding-top:75px;
+            }
             .header-nav a:hover::after, .header-nav a.active::after {
                 width: 0; /* لإلغاء تأثير الخط في الموبايل */
             }
@@ -290,9 +293,13 @@
             }
 
             .mobile-menu-toggle-container{
-                width: 100%;
+                width: 100%; /* هذا هو التعديل المطلوب! */
                 background-color: #a00000;
                 order: 2;
+                display: flex; /* لكي يعمل justify-content و align-items */
+                justify-content: flex-end; /* لمحاذاة الزر إلى اليمين */
+                padding-right: 80px;
+                padding-left: 120px;
             }
             
             .footer-top {
@@ -512,24 +519,30 @@
             });
 
             // لتبديل حالة القوائم الفرعية في الموبايل
-            const mobileDropdownToggles = headerNav.querySelectorAll('.dropdown-toggle');
-            mobileDropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const dropdownMenu = toggle.nextElementSibling;
-                    
-                    // إغلاق أي قائمة فرعية مفتوحة أخرى
-                    mobileDropdownToggles.forEach(otherToggle => {
-                        if (otherToggle !== toggle) {
-                            otherToggle.nextElementSibling.classList.remove('active');
-                        }
-                    });
+        const mobileDropdownToggles = headerNav.querySelectorAll('.dropdown-toggle');
 
-                    // تبديل حالة القائمة الحالية
-                    dropdownMenu.classList.toggle('active');
+        mobileDropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', (event) => {
+                // منع السلوك الافتراضي للانتقال إلى الرابط #
+                event.preventDefault();
+
+                // تحديد القائمة المنسدلة المرتبطة
+                const dropdownMenu = toggle.nextElementSibling;
+
+                // التحقق مما إذا كانت القائمة المنسدلة مفتوحة بالفعل
+                const isMenuOpen = dropdownMenu.classList.contains('active');
+
+                // إغلاق أي قائمة مفتوحة أخرى
+                mobileDropdownToggles.forEach(otherToggle => {
+                    otherToggle.nextElementSibling.classList.remove('active');
                 });
+
+                // إذا لم تكن القائمة الحالية مفتوحة، فافتحها
+                if (!isMenuOpen) {
+                    dropdownMenu.classList.add('active');
+                }
             });
+        });
 
             // كود الفوتر المنسدل للموبايل
             const footerToggles = document.querySelectorAll('.footer-column h4');
