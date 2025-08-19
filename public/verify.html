@@ -118,7 +118,7 @@
         .mobile-menu-toggle {
             display: none; /* إخفاء الزر افتراضياً على سطح المكتب */
             font-size: 24px;
-            color: #800000;
+            color: #ffffff;
             cursor: pointer;
             margin-right: auto; /* يدفعه إلى اليسار */
         }
@@ -205,30 +205,46 @@
         /* --- تنسيقات الموبايل --- */
         @media (max-width: 768px) {
             .header-container {
-                flex-direction: row;
-                justify-content: space-between;
-                padding: 15px 20px;
+                flex-direction: column; /* جعل العناصر تتكدس فوق بعضها */
+                justify-content: center; /* توسيط العناصر */
+                align-items: center;
+                padding: 20px;
+                padding-right: 0cm;
             }
-            .header-logo { order: 2; margin-right: 0; }
-            .header-logo img { max-width: 120px; }
+
+            .header-logo {
+                order: 1; /* وضع اللوجو أولاً في الترتيب */
+                margin-right: 0;
+                margin-bottom: 5px; /* مسافة بين اللوجو والنافبار */
+            }
+            .header-logo img {
+                max-width: 120px;
+            }
             
             /* إخفاء القائمة في وضع الجوال وإظهارها عند الحاجة */
             .header-nav { 
-                display: none; 
-                position: absolute;
-                top: 75px; 
-                left: 0;
+                /* display: none;  */
+                position: static; /* إزالة الوضع المطلق */
                 width: 100%;
-                background-color: #fff;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                max-height: 0; 
-                overflow: hidden;
-                transition: max-height 0.3s ease-in-out;
+                background-color: transparent; /* إزالة خلفية القائمة */
+                box-shadow: none; /* إزالة الظل */
+                order: 3; /* وضع النافبار ثانياً في الترتيب */
+                max-height: 0;               /* مخفية */
+                overflow: hidden;            /* إخفاء أي عناصر زائدة */
+                opacity: 0;                  /* شفافية */
+                transform: translateY(-10px); /* تطلع من فوق شوي */
+                transition: max-height 0.4s ease, 
+                            opacity 0.3s ease, 
+                            transform 0.3s ease;
+        
             }
             .header-nav.active {
-                display: block;
-                max-height: 1000px;
+                /* display: block; */
+                max-height: 600px;   /* قيمة كافية لكل العناصر */
+                opacity: 1;
+                transform: translateY(0);
             }
+
             .header-nav a:hover::after, .header-nav a.active::after {
                 width: 0; /* لإلغاء تأثير الخط في الموبايل */
             }
@@ -265,7 +281,19 @@
                 padding-right: 40px;
             }
             
-            .mobile-menu-toggle { display: block; } /* إظهار زر القائمة */
+            .mobile-menu-toggle {
+                display: block; /* إظهار زر القائمة */
+                margin-right: auto;
+                padding-left: 15px;
+                right: 0%;
+                /* order: 2; وضع زر القائمة في النهاية */
+            }
+
+            .mobile-menu-toggle-container{
+                width: 100%;
+                background-color: #a00000;
+                order: 2;
+            }
             
             .footer-top {
                 flex-direction: column;
@@ -320,7 +348,14 @@
 <body>
     <header class="header">
         <div class="header-container">
-            <i class="fa fa-bars mobile-menu-toggle"></i>
+            <div class="header-logo">
+                <a href="https://www.mol.gov.qa">
+                    <img src="img/mol.png" alt="Logo">
+                </a>
+            </div>
+            <div class="mobile-menu-toggle-container" dir="ltr">
+                <i class="fa fa-bars mobile-menu-toggle"></i>
+            </div>
             <nav class="header-nav">
                 <ul class="header-nav-list">
                     <li><a href="https://www.mol.gov.qa">الرئيسية</a></li>
@@ -363,12 +398,6 @@
                     </li>
                 </ul>
             </nav>
-
-            <div class="header-logo">
-                <a href="https://www.mol.gov.qa">
-                    <img src="/img/mol.png" alt="Logo">
-                </a>
-            </div>
         </div>
     </header>
 
