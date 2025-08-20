@@ -14,342 +14,394 @@
 
     <style>
         /* تعريف الخط المستخدم في التصميم */
-        @font-face {
-            font-family: 'Dubai';
-            src: url('./fonts/Dubai-Regular.ttf') format('opentype');
-            font-weight: normal;
-            font-style: normal;
-        }
+@font-face {
+    font-family: 'Dubai';
+    src: url('./fonts/Dubai-Regular.ttf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
 
-        /* تنسيقات الجسم العامة */
-        body {
-            font-family: 'Dubai', 'Tajawal', sans-serif;
-            margin: 0;
-            padding-top: 75px; /* لإضافة مسافة تحت الهيدر الثابت */
-            background-color: #f5f5f5;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+/* تنسيقات الجسم العامة */
+body {
+    font-family: 'Dubai', 'Tajawal', sans-serif;
+    margin: 0;
+    padding-top: 75px;
+    background-color: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    min-height: 150vh;
+}
 
-        /* --- تنسيقات الشريط العلوي (الهيدر) --- */
-        .header { 
-            background-color: #fff; 
-            padding: 15px 30px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            position: fixed; /* تثبيت الهيدر في أعلى الصفحة */
-            top: 0;
-            width: 100%;
-            z-index: 1000; /* لضمان ظهوره فوق المحتوى الآخر */
-        }
-        .header-container {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .header-logo img { max-width: 160px; margin-right: 25px; }
+/* --- تنسيقات الشريط العلوي (الهيدر) --- */
+.header {
+    background-color: #fff;
+    padding: 15px 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+.header-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    max-width: none;
+    margin: 0;
+}
+.header {
+    padding-left: 0;
+    padding-right: 0;
+}
+.header-logo img { max-width: 160px; margin-right: 25px; }
+.header.scrolled .header-logo img {
+    max-width: 120px;
+    transition: max-width 0.3s ease-in-out;
+}
 
-        /* تنسيقات قائمة التنقل */
-        .header-nav { flex-grow: 1; }
-        .header-nav ul {
-            list-style: none; margin: 0; padding: 0;
-            display: flex; align-items: center;
-        }
-        .header-nav li { position: relative; margin-right: 20px; }
-        .header-nav a {
-            text-decoration: none; color: #000; font-size: 0.9rem;
-            display: flex; align-items: center; white-space: nowrap; transition: color 0.3s;
-            position: relative; /* لإضافة الخط السفلي */
-        }
-        .header-nav a:hover, .header-nav a.active { 
-            color: #800000; 
-        }
-        .header-nav a::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: -5px;
-            right: 0; /* يبدأ من اليمين بسبب الاتجاه RTL */
-            background-color: #800000;
-            transition: width 0.3s ease-in-out;
-        }
-        .header-nav a:hover::after, .header-nav a.active::after {
-            width: 100%;
-        }
-        .header-nav a .fa { font-size: 0.75rem; margin-left: 5px; }
+/* تنسيقات قائمة التنقل */
+.header-nav { flex-grow: 1; }
+.header-nav ul {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; align-items: center;
+}
+.header-nav li { position: relative; margin-right: 20px; }
+.header-nav a {
+    text-decoration: none; color: #000; font-size: 0.9rem;
+    display: flex; align-items: center; white-space: nowrap; transition: color 0.3s;
+    position: relative;
+}
+.header-nav a:hover, .header-nav a.active {
+    color: #800000;
+}
+.header-nav a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -5px;
+    right: 0;
+    background-color: #800000;
+    transition: width 0.3s ease-in-out;
+}
+.header-nav a:hover::after, .header-nav a.active::after {
+    width: 100%;
+}
+.header-nav a .fa { font-size: 0.75rem; margin-left: 5px; }
 
-        /* القائمة المنسدلة (Dropdown) - تنسيق الانتقال السلس */
-        .dropdown-menu {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: #fff;
-            min-width: 200px;
-            padding: 0;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            list-style: none;
-            margin: 0;
-            z-index: 100;
-            max-height: 0; /* لإخفاء القائمة بشكل سلس */
-            overflow: hidden; /* لإخفاء المحتوى الزائد */
-            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out; /* إضافة transition */
-        }
-        .dropdown-menu a {
-            color: #333; padding: 8px 10px; display: block;
-            transition: background-color 0.3s; white-space: normal; font-weight: normal;
-            border-bottom: none;
-        }
-        .dropdown-menu a:hover { background-color: #f5f5f5; }
+/* القائمة المنسدلة (Dropdown) - تنسيق الانتقال السلس */
+.dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    min-width: 200px;
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    list-style: none;
+    margin: 0;
+    z-index: 100;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+.dropdown-menu a {
+    color: #333; padding: 8px 10px; display: block;
+    transition: background-color 0.3s; white-space: normal; font-weight: normal;
+    border-bottom: none;
+}
+.dropdown-menu a:hover { background-color: #f5f5f5; }
 
-        /* إظهار القائمة المنسدلة عند مرور الماوس */
-        .dropdown:hover > .dropdown-menu {
-            max-height: 500px; /* قيمة كبيرة بما يكفي لجميع العناصر */
-            padding: 10px; /* لإضافة padding عند الظهور */
-        }
+/* إظهار القائمة المنسدلة عند مرور الماوس */
+.dropdown:hover > .dropdown-menu {
+    max-height: 500px;
+    padding: 10px;
+}
 
-        /* زر القائمة للموبايل */
-        .mobile-menu-toggle {
-            display: none; /* إخفاء الزر افتراضياً على سطح المكتب */
-            font-size: 24px;
-            color: #ffffff;
-            cursor: pointer;
-            margin-right: auto; /* يدفعه إلى اليسار */
-        }
-        
-        /* تنسيقات شاشة اللودر */
-        .loader-screen { text-align: center; }
-        .spinner {
-            border: 6px solid #f3f3f3; border-top: 6px solid #800000; border-radius: 50%;
-            width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 40px auto 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader-text { font-size: 18px; color: #800000; font-weight: bold; }
+/* زر القائمة للموبايل */
+.mobile-menu-toggle {
+    display: none;
+    font-size: 24px;
+    color: #ffffff;
+    cursor: pointer;
+    margin-right: auto;
+}
 
-        /* تنسيقات الكارت */
-        .card {
-            background: #fff; border-radius: 20px; box-shadow: 0 6px 25px rgba(0,0,0,0.15);
-            max-width: 600px; width: 100%; text-align: center; display: none; overflow: hidden; margin: 20px auto;
-            padding-top: 75px;
-        }
-        .status-icon {
-            font-size: 40px; color: #28a745; background-color: #e6f4ea; width: 100px; height: 100px;
-            border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 20px auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .status-text { font-size: 24px; font-weight: bold; color: #28a745; margin-bottom: 20px; }
-        .btn-download {
-            display: inline-block; margin: 15px 0 25px 0; padding: 12px 25px; background: #800000; color: #fff;
-            font-size: 15px; text-decoration: none; border-radius: 8px; transition: background 0.3s;
-        }
-        .btn-download:hover { background: #a00000; }
-        .doc-info { text-align: right; border-top: 1px solid #eee; padding: 20px; }
-        .doc-info p { margin: 8px 0; font-size: 15px; line-height: 1.6; }
-        .doc-info strong { color: #800000; }
+/* تنسيقات شاشة اللودر */
+.loader-inside-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+.spinner {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #800000;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.loader-text {
+    font-size: 18px;
+    color: #800000;
+    font-weight: bold;
+}
+.card-content {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
 
-        /* --- تنسيقات الفوتر (الأسفل) --- */
-        .footer {
-            font-family: 'Dubai', "Tajawal", "Helvetica Neue", Helvetica, "Tahoma", Arial, sans-serif;
-            background: #8E182A url(/img/footer.png) center center no-repeat;
-            color: #fff; margin-top: auto; 
-        }
-        .footer-top {
-            display: flex; flex-wrap: wrap; justify-content: space-between;
-            max-width: 1200px; margin: 0 auto; padding: 30px 15px;
-        }
-        .footer-column { flex: 1; min-width: 200px; margin-bottom: 20px; }
-        .footer-column h4 {
-            font-size: 1rem; margin: 0 0 15px; border-bottom: 1px solid rgba(255,255,255,0.3);
-            padding-bottom: 5px; cursor: pointer; position: relative;
-        }
-        .footer-column h4::after {
-            content: "\f107"; font-family: FontAwesome; position: absolute; left: 0; top: 50%;
-            transform: translateY(-50%); display: none;
-        }
-        .footer-column ul { list-style: none; padding: 0; margin: 0; }
-        .footer-column ul li a {
-            color: #fff; text-decoration: none; display: block; margin-bottom: 8px; font-size: 0.90rem;
-            position: relative;
-        }
-        .footer-column ul li a::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 1px;
-            bottom: -2px;
-            right: 0;
-            background-color: #fff;
-            transition: width 0.3s ease-in-out;
-        }
-        .footer-column ul li a:hover::after {
-            width: 100%;
-        }
+/* الكلاس الذي سيُضاف بواسطة JavaScript لإظهار المحتوى */
+.card-content.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+/* تنسيقات الكارت */
+.card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    margin: 20px auto;
+    padding: 75px 20px 20px;
+}
+.status-icon {
+    font-size: 40px; color: #28a745; background-color: #e6f4ea; width: 100px; height: 100px;
+    border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 20px auto;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.status-text { font-size: 24px; font-weight: bold; color: #28a745; margin-bottom: 20px; }
+.btn-download {
+    display: inline-block; margin: 15px 0 25px 0; padding: 12px 25px; background: #800000; color: #fff;
+    font-size: 15px; text-decoration: none; border-radius: 8px; transition: background 0.3s;
+}
+.btn-download:hover { background: #a00000; }
+.doc-info { text-align: right; border-top: 1px solid #eee; padding: 20px; }
+.doc-info p { margin: 8px 0; font-size: 15px; line-height: 1.6; }
+.doc-info strong { color: #800000; }
 
-        .footer-bottom {
-            padding: 15px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-        }
-        .footer-copy { font-size: 0.85rem; margin: 0; grid-column: 1; text-align: right; }
-        .footer-social { display: flex; gap: 14px; flex-wrap: wrap; grid-column: 2; }
-        .footer-social a {
-            color: #8A1538; font-size: 14px; text-decoration: none; background-color: #fff;
-            width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background-color 0.3s;
-        }
-        .footer-social a:hover { background-color: #ccc; }
-        
-        /* --- تنسيقات الموبايل --- */
-        @media (max-width: 768px) {
-            .header-container {
-                flex-direction: column; /* جعل العناصر تتكدس فوق بعضها */
-                justify-content: center; /* توسيط العناصر */
-                align-items: center;
-                padding-right: 0cm;
-            }
+/* --- تنسيقات الفوتر (الأسفل) --- */
+.footer {
+    font-family: 'Dubai', "Tajawal", "Helvetica Neue", Helvetica, "Tahoma", Arial, sans-serif;
+    background: #8E182A url(/img/footer.png) center center no-repeat;
+    color: #fff; margin-top: auto;
+    min-height: 300px;
+    background-size: cover;
+    position: relative;
+    overflow: hidden;
+}
+.footer-wrapper {
+    transform: translateY(100%);
+    transition: transform 1.5s ease-out;
+}
+.footer.visible .footer-wrapper {
+    transform: translateY(0);
+}
+.footer-column h4 .mobile-toggle {
+    display: none;
+}
+.footer-top {
+    display: flex; flex-wrap: wrap; justify-content: space-between;
+    max-width: 1200px; margin: 0 auto; padding: 20px 15px 1px;
+}
+.footer-column { flex: 1; min-width: 200px; margin-bottom: 20px; }
+.footer-column h4 {
+    font-size: 1rem; margin: 0 0 15px; border-bottom: 1px solid rgba(255,255,255,0.3);
+    padding-bottom: 5px; cursor: pointer; position: relative;
+}
+.footer-column h4::after {
+    content: ""; /* إخفاء الأيقونة في الديسكتوب */
+    font-family: FontAwesome;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+}
+.footer-column ul { list-style: none; padding: 0; margin: 0; }
+.footer-column ul li a {
+    color: #fff; text-decoration: none; display: block; margin-bottom: 8px; font-size: 0.90rem;
+    position: relative;
+}
+.footer-column ul li a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    right: 0;
+    background-color: #fff;
+    transition: width 0.3s ease-in-out;
+}
+.footer-column ul li a:hover::after {
+    width: 100%;
+}
 
-            .header-logo {
-                order: 1; /* وضع اللوجو أولاً في الترتيب */
-                margin-right: 0;
-                margin-bottom: 5px; /* مسافة بين اللوجو والنافبار */
-            }
-            .header-logo img {
-                max-width: 120px;
-            }
-            
-            /* إخفاء القائمة في وضع الجوال وإظهارها عند الحاجة */
-            .header-nav { 
-                /* display: none;  */
-                position: static; /* إزالة الوضع المطلق */
-                width: 100%;
-                background-color: transparent; /* إزالة خلفية القائمة */
-                box-shadow: none; /* إزالة الظل */
-                order: 3; /* وضع النافبار ثانياً في الترتيب */
-                max-height: 0;               /* مخفية */
-                overflow: hidden;            /* إخفاء أي عناصر زائدة */
-                opacity: 0;                  /* شفافية */
-                transform: translateY(-10px); /* تطلع من فوق شوي */
-                transition: max-height 0.4s ease, 
-                            opacity 0.3s ease, 
-                            transform 0.3s ease;
-        
-            }
-            .header-nav.active {
-                /* display: block; */
-                max-height: 600px;   /* قيمة كافية لكل العناصر */
-                opacity: 1;
-                transform: translateY(0);
-            }
+.footer-bottom {
+    padding: 1px 15px 10px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+}
+.footer-copy { font-size: 0.85rem; margin: 0; grid-column: 1; text-align: right; }
+.footer-social { display: flex; gap: 14px; flex-wrap: wrap; grid-column: 2; }
+.footer-social a {
+    color: #8A1538; font-size: 14px; text-decoration: none; background-color: #fff;
+    width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background-color 0.3s;
+}
+.footer-social a:hover { background-color: #ccc; }
 
-            .card {
-                padding-top:75px;
-            }
-            .header-nav a:hover::after, .header-nav a.active::after {
-                width: 0; /* لإلغاء تأثير الخط في الموبايل */
-            }
+/* --- تنسيقات الموبايل --- */
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding-right: 0cm;
+    }
+    .header-logo {
+        order: 1;
+        margin-right: 0;
+        margin-bottom: 5px;
+        align-self: center;
+    }
+    .header-logo img {
+        max-width: 120px;
+    }
+    .header-nav {
+        position: static;
+        width: 100%;
+        background-color: transparent;
+        box-shadow: none;
+        order: 3;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
+    }
+    .header-nav.active {
+        max-height: 600px;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .card {
+        padding-top:75px;
+    }
+    .header-nav a:hover::after, .header-nav a.active::after {
+        width: 0;
+    }
+    .header-nav ul {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0;
+    }
+    .header-nav li {
+        width: 100%;
+        margin-right: 0;
+        border-bottom: 1px solid #eee;
+    }
+    .header-nav a {
+        padding: 15px 25px;
+        justify-content: space-between;
+    }
+    .header-nav .dropdown-menu {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        background-color: #f9f9f9;
+        padding: 0 0 0 20px;
+        max-height: 0;
+        transition: max-height 0.3s ease-in-out;
+    }
+    .header-nav .dropdown-menu.active {
+        max-height: 500px;
+    }
+    .header-nav .dropdown-menu a {
+        padding-right: 40px;
+    }
+    .mobile-menu-toggle {
+        display: block;
+        margin-right: auto;
+        padding-left: 15px;
+        right: 0%;
+    }
+    .mobile-menu-toggle-container {
+        width: 100%;
+        background-color: #a00000;
+        order: 2;
+        display: flex;
+        justify-content: flex-end;
+        padding-right: 80px;
+        padding-left: 120px;
+    }
 
-            .header-nav ul {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 0;
-            }
-            .header-nav li {
-                width: 100%;
-                margin-right: 0;
-                border-bottom: 1px solid #eee;
-            }
-            .header-nav a {
-                padding: 15px 25px;
-                justify-content: space-between;
-            }
-            
-            /* تنسيق القوائم الفرعية في الجوال */
-            .header-nav .dropdown-menu {
-                position: static;
-                width: 100%;
-                box-shadow: none;
-                background-color: #f9f9f9;
-                padding: 0 0 0 20px;
-                max-height: 0;
-                transition: max-height 0.3s ease-in-out;
-            }
-            .header-nav .dropdown-menu.active {
-                max-height: 500px;
-            }
-            .header-nav .dropdown-menu a {
-                padding-right: 40px;
-            }
-            
-            .mobile-menu-toggle {
-                display: block; /* إظهار زر القائمة */
-                margin-right: auto;
-                padding-left: 15px;
-                right: 0%;
-                /* order: 2; وضع زر القائمة في النهاية */
-            }
+    .footer-top {
+        flex-direction: column;
+        align-items: center;
+        text-align: right;
+    }
+    .footer-column {
+        width: 100%;
+        max-width: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .footer-column h4 {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        margin: 0;
+        padding: 15px 0;
+        border-bottom: none;
+    }
+    /* هذا هو الكود الذي تم تعديله لإظهار الزائد والناقص */
+    .footer-column h4 .mobile-toggle {
+        display: block;
+        font-size: 1.2em;
+        transition: transform 0.3s ease-in-out;
+    }
+    .footer-column h4.active .mobile-toggle {
+        transform: rotate(180deg);
+    }
 
-            .mobile-menu-toggle-container{
-                width: 100%; /* هذا هو التعديل المطلوب! */
-                background-color: #a00000;
-                order: 2;
-                display: flex; /* لكي يعمل justify-content و align-items */
-                justify-content: flex-end; /* لمحاذاة الزر إلى اليمين */
-                padding-right: 80px;
-                padding-left: 120px;
-            }
-            
-            .footer-top {
-                flex-direction: column;
-                align-items: center;
-                text-align: right;
-            }
-            .footer-column {
-                width: 100%;
-                max-width: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            }
-            .footer-column h4 {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                cursor: pointer;
-                margin: 0;
-                padding: 15px 0;
-                border-bottom: none; /* إزالة الخط السفلي في الموبايل */
-            }
-            .footer-column h4 .mobile-toggle {
-                font-size: 1.2em;
-                transition: transform 0.3s ease-in-out;
-            }
-            .footer-column h4.active .mobile-toggle {
-                transform: rotate(180deg);
-            }
-            .footer-column ul {
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s ease-in-out;
-            }
-            .footer-column ul.active {
-                max-height: 500px;
-            }
-            .footer-column ul li a::after {
-                width: 0; /* إزالة الخط في الموبايل */
-            }
-            .footer-bottom {
-                grid-template-columns: 1fr;
-                gap: 10px;
-                justify-items: center;
-                text-align: center;
-                flex-direction: column-reverse; /* نقل الحقوق المحفوظة للأعلى */
-                display: flex;
-            }
-            .footer-copy { text-align: center; order: 1; }
-            .footer-social { order: 2; margin-top: 15px; }
-        }
+    .footer-column ul {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+    }
+    .footer-column ul.active {
+        max-height: 500px;
+    }
+    .footer-column ul li a::after {
+        width: 0;
+    }
+    .footer-bottom {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        justify-items: center;
+        text-align: center;
+        flex-direction: column-reverse;
+        display: flex;
+    }
+    .footer-copy { text-align: center; order: 1; }
+    .footer-social { order: 2; margin-top: 15px; }
+}
     </style>
 </head>
 <body>
@@ -408,174 +460,190 @@
         </div>
     </header>
 
-    <div class="loader-screen" id="loader">
+    <!-- <div class="loader-screen" id="loader">
         <div class="spinner"></div>
         <div class="loader-text">جاري التحقق...</div>
-    </div>
+    </div> -->
 
     <div class="card" id="card">
-        <div class="status-icon">✔</div>
-        <div class="status-text">تم التحقق</div>
+    
+        <div class="loader-inside-card" id="loader-inside">
+            <div class="spinner"></div>
+            <div class="loader-text">جاري التحقق...</div>
+        </div>
+        
+        <div class="card-content" id="card-content">
+            <div class="status-icon">✔</div>
+            <div class="status-text">تم التحقق</div>
 
-        <a href="{{file_url}}" id="downloadLink" class="btn-download" download>تحميل المستند</a>
+            <a href="{{file_url}}" id="downloadLink" class="btn-download" download>تحميل المستند</a>
 
-        <div class="doc-info">
-            <p><strong>رقم المستند:</strong> {{doc_number}}</p>
-            <p><strong>نوع المستند:</strong> {{doc_type}}</p>
-            <p><strong>الطرف الأول:</strong> {{party_one}} / {{party_one_one}}</p>
-            <p><strong>الطرف الثاني:</strong> {{party_two}} / {{party_two_id}}</p>
-            <p><strong>الحالة:</strong> {{status}}</p>
-            <p><strong>تاريخ الإصدار:</strong> {{issue_date}}</p>
+            <div class="doc-info">
+                <p><strong>رقم المستند:</strong> {{doc_number}}</p>
+                <p><strong>نوع المستند:</strong> {{doc_type}}</p>
+                <p><strong>الطرف الأول:</strong> {{party_one}} / {{party_one_id}}</p>
+                <p><strong>الطرف الثاني:</strong> {{party_two}} / {{party_two_id}}</p>
+                <p><strong>الحالة:</strong> {{status}}</p>
+                <p><strong>تاريخ الإصدار:</strong> {{issue_date}}</p>
+            </div>
         </div>
     </div>
 
     <footer class="footer">
-        <div class="footer-top">
-            <div class="footer-column">
-                <h4>
-                    الوزارة
-                    <i class="fa fa-plus mobile-toggle"></i>
-                </h4>
-                <ul>
-                    <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/About-the-Ministry.aspx">نبذة عن الوزارة</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Minster-Speech.aspx">كلمة سعادة الوزير الدكتور/<br> على بن صميخ المري</a></li>
-                    <li><a href="https://www.mol.qa/ar/ministry/Pages/Vision-Mission-and-Values.aspx">الرؤية والرسالة والقيم</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Strategy-and-Functions.aspx">استراتيجية الوزارة2018 -2022</a></li>
-                    <li><a href="https://www.mol.gov.qa/admin/Services%20documents/%D8%A7%D9%84%D9%87%D9%8A%D9%83%D9%84%20%D8%A7%D9%84%D8%AA%D9%86%D8%B8%D9%8A%D9%85%D9%8A%20%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D8%B9%D9%85%D9%84.pdf">الهيكل التنظيمي</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Laws.aspx">التشريعات والقوانين</a></li>
-                </ul>
+        <div class="footer-wrapper">
+            <div class="footer-top">
+                <div class="footer-column">
+                    <h4>
+                        الوزارة
+                        <i class="fa fa-plus mobile-toggle"></i>
+                    </h4>
+                    <ul>
+                        <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/About-the-Ministry.aspx">نبذة عن الوزارة</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Minster-Speech.aspx">كلمة سعادة الوزير الدكتور/<br> على بن صميخ المري</a></li>
+                        <li><a href="https://www.mol.qa/ar/ministry/Pages/Vision-Mission-and-Values.aspx">الرؤية والرسالة والقيم</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Strategy-and-Functions.aspx">استراتيجية الوزارة2018 -2022</a></li>
+                        <li><a href="https://www.mol.gov.qa/admin/Services%20documents/%D8%A7%D9%84%D9%87%D9%8A%D9%83%D9%84%20%D8%A7%D9%84%D8%AA%D9%86%D8%B8%D9%8A%D9%85%D9%8A%20%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D8%B9%D9%85%D9%84.pdf">الهيكل التنظيمي</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/Laws.aspx">التشريعات والقوانين</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>
+                        الخدمات
+                        <i class="fa fa-plus mobile-toggle"></i>
+                    </h4>
+                    <ul>
+                        <li><a href="https://www.mol.gov.qa/ar/services/Pages/default.aspx">خدمات إلكترونية واستمارات</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>
+                        المركز الإعلامي
+                        <i class="fa fa-plus mobile-toggle"></i>
+                    </h4>
+                    <ul>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/News.aspx">الأخبار</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/Events.aspx">الفعاليات</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/PhotoGallery.aspx">معرض الصور</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/VideoGallery.aspx">معرض الفيديو</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/AnnualEvents.aspx">الأحداث السنوية</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/Publications.aspx">تقارير وإصدارات</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>
+                        اتصل بنا
+                        <i class="fa fa-plus mobile-toggle"></i>
+                    </h4>
+                    <ul>
+                        <li><a href="https://www.mol.gov.qa/ar/contactus/Pages/ContactMinisty.aspx">اتصل بنا</a></li>
+                        <li><a href="https://www.mol.gov.qa/ar/contactus/Pages/ComplaintsAndSuggestions.aspx">الشكاوى والاقتراحات</a></li>
+                    </ul>
+                </div>
             </div>
-            <div class="footer-column">
-                <h4>
-                    الخدمات
-                    <i class="fa fa-plus mobile-toggle"></i>
-                </h4>
-                <ul>
-                    <li><a href="https://www.mol.gov.qa/ar/services/Pages/default.aspx">خدمات إلكترونية واستمارات</a></li>
-                </ul>
-            </div>
-            <div class="footer-column">
-                <h4>
-                    المركز الإعلامي
-                    <i class="fa fa-plus mobile-toggle"></i>
-                </h4>
-                <ul>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/News.aspx">الأخبار</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/Events.aspx">الفعاليات</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/PhotoGallery.aspx">معرض الصور</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/VideoGallery.aspx">معرض الفيديو</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/AnnualEvents.aspx">الأحداث السنوية</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/Publications.aspx">تقارير وإصدارات</a></li>
-                </ul>
-            </div>
-            <div class="footer-column">
-                <h4>
-                    اتصل بنا
-                    <i class="fa fa-plus mobile-toggle"></i>
-                </h4>
-                <ul>
-                    <li><a href="https://www.mol.gov.qa/ar/contactus/Pages/ContactMinisty.aspx">اتصل بنا</a></li>
-                    <li><a href="https://www.mol.gov.qa/ar/contactus/Pages/ComplaintsAndSuggestions.aspx">الشكاوى والاقتراحات</a></li>
-                </ul>
-            </div>
-        </div>
 
-        <div class="footer-bottom">
-            <div class="footer-copy">© وزارة العمل 2025. جميع الحقوق محفوظة</div>
-            <div class="footer-social">
-                <a href="https://www.youtube.com/channel/UC3un3NYmRegSNF1pc0BHjyw"><i class="fa fa-youtube-play"></i></a>
-                <a href="https://www.snapchat.com/@molqtr?share_id=MjczNkUw&locale=en_QA"><i class="fa fa-snapchat"></i></a>
-                <a href="https://www.instagram.com/molqtr/?igshid=YmMyMTA2M2Y%3D"><i class="fa fa-instagram"></i></a>
-                <a href="https://x.com/molqtr?t=Ieb-H0OqyiRKf3mGRs50Lg"><i class="fa fa-twitter"></i></a>
-                <a href="https://web.facebook.com/MOLQTR?_rdc=1&_rdr#"><i class="fa fa-facebook"></i></a>
+            <div class="footer-bottom">
+                <div class="footer-copy">© وزارة العمل 2025. جميع الحقوق محفوظة</div>
+                <div class="footer-social">
+                    <a href="https://www.youtube.com/channel/UC3un3NYmRegSNF1pc0BHjyw"><i class="fa fa-youtube-play"></i></a>
+                    <a href="https://www.snapchat.com/@molqtr?share_id=MjczNkUw&locale=en_QA"><i class="fa fa-snapchat"></i></a>
+                    <a href="https://www.instagram.com/molqtr/?igshid=YmMyMTA2M2Y%3D"><i class="fa fa-instagram"></i></a>
+                    <a href="https://x.com/molqtr?t=Ieb-H0OqyiRKf3mGRs50Lg"><i class="fa fa-twitter"></i></a>
+                    <a href="https://web.facebook.com/MOLQTR?_rdc=1&_rdr#"><i class="fa fa-facebook"></i></a>
+                </div>
             </div>
         </div>
     </footer>
 
-    <script>
-        // إخفاء اللودر بعد 4 ثواني
+   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // إخفاء اللودر وإظهار المحتوى بعد 4 ثواني
         setTimeout(() => {
-            document.getElementById("loader").style.display = "none";
-            document.getElementById("card").style.display = "block";
+            document.getElementById("loader-inside").style.display = "none";
+            document.getElementById("card-content").classList.add("show");
         }, 4000);
 
-        // كود JavaScript للقائمة المنسدلة في الموبايل
-        document.addEventListener('DOMContentLoaded', () => {
-            const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-            const headerNav = document.querySelector('.header-nav');
-            
-            // لتبديل حالة القائمة الرئيسية في الموبايل
-            mobileMenuToggle.addEventListener('click', (event) => {
-                event.stopPropagation();
-                headerNav.classList.toggle('active');
-            });
-            
-            // إغلاق القائمة عند النقر خارجها
-            document.addEventListener('click', (event) => {
-                const isClickInside = headerNav.contains(event.target) || mobileMenuToggle.contains(event.target);
-                if (!isClickInside && headerNav.classList.contains('active')) {
-                    headerNav.classList.remove('active');
-                }
-            });
+        // كود الهيدر (شريط التنقل)
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        const headerNav = document.querySelector('.header-nav');
 
-            // لتبديل حالة القوائم الفرعية في الموبايل
+        mobileMenuToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            headerNav.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (event) => {
+            const isClickInside = headerNav.contains(event.target) || mobileMenuToggle.contains(event.target);
+            if (!isClickInside && headerNav.classList.contains('active')) {
+                headerNav.classList.remove('active');
+            }
+        });
+
         const mobileDropdownToggles = headerNav.querySelectorAll('.dropdown-toggle');
-
         mobileDropdownToggles.forEach(toggle => {
             toggle.addEventListener('click', (event) => {
-                // منع السلوك الافتراضي للانتقال إلى الرابط #
                 event.preventDefault();
-
-                // تحديد القائمة المنسدلة المرتبطة
                 const dropdownMenu = toggle.nextElementSibling;
-
-                // التحقق مما إذا كانت القائمة المنسدلة مفتوحة بالفعل
                 const isMenuOpen = dropdownMenu.classList.contains('active');
 
-                // إغلاق أي قائمة مفتوحة أخرى
-                mobileDropdownToggles.forEach(otherToggle => {
-                    otherToggle.nextElementSibling.classList.remove('active');
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== dropdownMenu) {
+                        menu.classList.remove('active');
+                    }
                 });
 
-                // إذا لم تكن القائمة الحالية مفتوحة، فافتحها
-                if (!isMenuOpen) {
+                if (isMenuOpen) {
+                    dropdownMenu.classList.remove('active');
+                } else {
                     dropdownMenu.classList.add('active');
                 }
             });
         });
 
-            // كود الفوتر المنسدل للموبايل
-            const footerToggles = document.querySelectorAll('.footer-column h4');
+        // كود الفوتر (القائمة المنسدلة)
+        const footerToggles = document.querySelectorAll('.footer-column h4');
+        footerToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const list = toggle.nextElementSibling;
 
-            footerToggles.forEach(toggle => {
-                toggle.addEventListener('click', () => {
-                    const list = toggle.nextElementSibling;
-                    const icon = toggle.querySelector('.mobile-toggle');
-
-                    // إغلاق أي قائمة مفتوحة أخرى في الفوتر
-                    footerToggles.forEach(otherToggle => {
-                        if (otherToggle !== toggle && otherToggle.classList.contains('active')) {
-                            otherToggle.classList.remove('active');
-                            otherToggle.querySelector('.mobile-toggle').classList.remove('fa-minus');
-                            otherToggle.querySelector('.mobile-toggle').classList.add('fa-plus');
-                            otherToggle.nextElementSibling.classList.remove('active');
-                        }
-                    });
-                    
-                    // تبديل حالة القائمة الحالية
-                    toggle.classList.toggle('active');
-                    list.classList.toggle('active');
-
-                    if (list.classList.contains('active')) {
-                        icon.classList.remove('fa-plus');
-                        icon.classList.add('fa-minus');
-                    } else {
-                        icon.classList.remove('fa-minus');
-                        icon.classList.add('fa-plus');
+                // إغلاق أي قائمة مفتوحة أخرى
+                footerToggles.forEach(otherToggle => {
+                    if (otherToggle !== toggle && otherToggle.classList.contains('active')) {
+                        otherToggle.classList.remove('active');
+                        otherToggle.nextElementSibling.classList.remove('active');
                     }
                 });
+
+                // تبديل حالة القائمة الحالية (فتح/إغلاق)
+                toggle.classList.toggle('active');
+                list.classList.toggle('active');
             });
         });
-    </script>
+
+        // كود الهيدر عند التمرير
+        const header = document.querySelector('.header');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // كود حركة الفوتر
+        const footer = document.querySelector('.footer');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    footer.classList.add('visible');
+                } else {
+                    footer.classList.remove('visible');
+                }
+            });
+        }, {
+            threshold: 0.2
+        });
+        observer.observe(footer);
+    });
+</script>
 </body>
 </html>
