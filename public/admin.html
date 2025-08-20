@@ -90,15 +90,15 @@
         <form id="documentForm" action="/add-document" method="POST">
             <div class="form-group">
                 <label for="doc_number">رقم المستند:</label>
-                <input type="text" id="doc_number" name="doc_number" required>
+                <input type="text" id="doc_number" name="doc_number" value="E937028538-43" required>
             </div>
             <div class="form-group">
                 <label for="doc_type">نوع المستند:</label>
-                <input type="text" id="doc_type" name="doc_type" required>
+                <input type="text" id="doc_type" name="doc_type" value="عقد عمل خارجي" required>
             </div>
             <div class="form-group">
                 <label for="party_one">الطرف الأول:</label>
-                <input type="text" id="party_one" name="party_one" required>
+                <input type="text" id="party_one" name="party_one" value="مدرسة العزيزية الخاصة للبنين" required>
             </div>
             <div class="form-group">
                 <label for="party_two">الطرف الثاني:</label>
@@ -107,8 +107,9 @@
             <div class="form-group">
                 <label for="status">الحالة:</label>
                 <select id="status" name="status" required>
-                    <option value="Valid">Valid</option>
-                    <option value="Invalid">Invalid</option>
+                    <option value="بانتظار المصادقة">بانتظار المصادقة</option>
+                    <option value="بانتظار توقيع الطرف الثاني">بانتظار توقيع الطرف الثاني</option>
+                    <option value="ملغي">ملغي</option>
                 </select>
             </div>
             <div class="form-group">
@@ -117,7 +118,7 @@
             </div>
             <div class="form-group">
                 <label for="party_one_id">هوية الطرف الأول:</label>
-                <input type="text" id="party_one_id" name="party_one_id" required>
+                <input type="text" id="party_one_id" name="party_one_id" value="20138094" required>
             </div>
             <div class="form-group">
                 <label for="party_two_id">هوية الطرف الثاني:</label>
@@ -127,21 +128,17 @@
                 <label for="file_url">رابط الملف (File URL):</label>
                 <input type="url" id="file_url" name="file_url" required>
             </div>
-            
             <button type="submit" class="btn-submit">إضافة</button>
         </form>
         <div id="messageBox" class="message-box"></div>
     </div>
-
     <script>
         const form = document.getElementById('documentForm');
         const messageBox = document.getElementById('messageBox');
-        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
-            
             try {
                 const response = await fetch('/add-document', {
                     method: 'POST',
@@ -150,9 +147,7 @@
                     },
                     body: new URLSearchParams(data).toString(),
                 });
-                
                 const result = await response.text();
-                
                 if (response.ok) {
                     messageBox.textContent = result;
                     messageBox.classList.remove('message-error');
