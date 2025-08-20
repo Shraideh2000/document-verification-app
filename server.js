@@ -48,8 +48,8 @@ app.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: true, // 📌 السماح بالكوكيز على اتصال HTTPS فقط
-            sameSite: 'none' // 📌 السماح بإرسال الكوكيز عبر النطاقات
+            secure: true,
+            sameSite: 'none'
         }
     })
 );
@@ -113,9 +113,9 @@ app.post("/login", (req, res) => {
     if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
         // تسجيل الدخول بنجاح!
         req.session.isAuthenticated = true;
-        console.log("✅ Login successful! Session created. Redirecting to /admin");
-        // 📌 التعديل هنا: إعادة التوجيه مباشرة
-        res.redirect('/admin');
+        console.log("✅ Login successful! Session created. Sending success response.");
+        // 📌 التعديل هنا: إرسال استجابة نجاح بدلاً من إعادة التوجيه
+        res.status(200).send("Login successful!");
     } else {
         console.log("❌ Invalid username or password entered.");
         res.status(401).send("Invalid username or password.");

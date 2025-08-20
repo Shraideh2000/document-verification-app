@@ -6,7 +6,6 @@
     <title>تسجيل دخول الأدمن</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* CSS Style for the login page */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
@@ -85,16 +84,13 @@
         </form>
         <div id="messageBox" class="message-box"></div>
     </div>
-    
     <script>
         const loginForm = document.getElementById('loginForm');
         const messageBox = document.getElementById('messageBox');
-
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(loginForm);
             const data = Object.fromEntries(formData.entries());
-
             try {
                 const response = await fetch('/login', {
                     method: 'POST',
@@ -103,15 +99,12 @@
                     },
                     body: new URLSearchParams(data).toString(),
                 });
-
                 const result = await response.text();
-
                 if (response.ok) {
                     messageBox.textContent = result + " جارِ إعادة التوجيه...";
                     messageBox.classList.remove('message-error');
                     messageBox.classList.add('message-success');
                     messageBox.style.display = 'block';
-                    // 📌 إعادة التوجيه إلى صفحة إدارة المستندات
                     window.location.href = '/admin'; 
                 } else {
                     messageBox.textContent = result;
