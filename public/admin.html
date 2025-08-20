@@ -165,19 +165,20 @@
         const searchDocBtn = document.getElementById('searchDocBtn');
 
         // دالة لملء الحقول ببيانات المستند
-        function populateForm(document) {
-            // قم بإزالة المتطلبات من جميع الحقول ما عدا رقم المستند
-            const requiredFields = document.querySelectorAll('input:not(#doc_number), select, textarea');
+        function populateForm(documentData) {
+            // Remove required attribute from other fields
+            const requiredFields = form.querySelectorAll('input:not(#doc_number), select');
             requiredFields.forEach(field => field.required = false);
 
-            document.getElementById('doc_type').value = document.doc_type || '';
-            document.getElementById('party_one').value = document.party_one || '';
-            document.getElementById('party_two').value = document.party_two || '';
-            document.getElementById('status').value = document.status || '';
-            document.getElementById('issue_date').value = document.issue_date ? new Date(document.issue_date).toISOString().split('T')[0] : '';
-            document.getElementById('party_one_id').value = document.party_one_id || '';
-            document.getElementById('party_two_id').value = document.party_two_id || '';
-            document.getElementById('file_url').value = document.file_url || '';
+            document.getElementById('doc_type').value = documentData.doc_type || '';
+            document.getElementById('party_one').value = documentData.party_one || '';
+            document.getElementById('party_two').value = documentData.party_two || '';
+            document.getElementById('status').value = documentData.status || '';
+            // For date input, we need to format it to 'YYYY-MM-DD'
+            document.getElementById('issue_date').value = documentData.issue_date ? new Date(documentData.issue_date).toISOString().split('T')[0] : '';
+            document.getElementById('party_one_id').value = documentData.party_one_id || '';
+            document.getElementById('party_two_id').value = documentData.party_two_id || '';
+            document.getElementById('file_url').value = documentData.file_url || '';
             showMessage('تم العثور على المستند. يمكنك الآن تعديل بياناته.', 'success');
         }
 
@@ -205,9 +206,8 @@
                     populateForm(result.data);
                 } else {
                     showMessage(result.message, 'error');
-                    // تفريغ الحقول في حالة عدم العثور على المستند
                     form.reset();
-                    docNumberInput.value = doc_number; // للحفاظ على رقم المستند الذي تم البحث عنه
+                    docNumberInput.value = doc_number;
                 }
             } catch (error) {
                 console.error('Error fetching document:', error);
@@ -221,16 +221,18 @@
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
-            // تحقق من وجود doc_number لتحديد إذا كانت العملية تحديث أو إضافة
             const isUpdate = !!data.doc_number;
+
+            // Prepare the data to be sent as JSON
+            const jsonData = JSON.stringify(data);
 
             try {
                 const response = await fetch('/add-document', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/json',
                     },
-                    body: new URLSearchParams(data).toString(),
+                    body: jsonData,
                 });
                 
                 const result = await response.text();

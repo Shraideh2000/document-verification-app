@@ -163,7 +163,6 @@ app.post("/api/search-documents", async (req, res) => {
     }
 });
 
-// 📌 راوت جديد لجلب بيانات مستند واحد
 app.get("/api/get-document/:doc_number", async (req, res) => {
     if (!req.session.isAuthenticated) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -210,7 +209,6 @@ app.post("/add-document", (req, res, next) => {
             }
             const oldDocData = oldDocResult.rows[0];
             
-            // 📌 المنطق الجديد: استخدم القيم الجديدة فقط إذا لم تكن فارغة
             const updateFields = {
                 doc_type: doc_type || oldDocData.doc_type,
                 party_one: party_one || oldDocData.party_one,
