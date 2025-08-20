@@ -17,9 +17,20 @@ const __dirname = path.dirname(__filename);
 // 📌 تسجيل المتغيرات البيئية عند بدء التشغيل
 console.log("-----------------------------------------");
 console.log("✅ Starting server and checking environment variables...");
-console.log(`ADMIN_USERNAME is: "${process.env.ADMIN_USERNAME}"`);
-console.log(`ADMIN_PASSWORD is: "${process.env.ADMIN_PASSWORD ? '****************' : 'Not set!'}"`); // إخفاء كلمة المرور للأمان
-console.log(`SESSION_SECRET is: "${process.env.SESSION_SECRET ? '****************' : 'Not set! Using default.'}"`);
+
+const safeEnv = { ...process.env };
+// إخفاء المتغيرات الحساسة
+if (safeEnv.ADMIN_PASSWORD) safeEnv.ADMIN_PASSWORD = "***HIDDEN***";
+if (safeEnv.SESSION_SECRET) safeEnv.SESSION_SECRET = "***HIDDEN***";
+if (safeEnv.DATABASE_URL) safeEnv.DATABASE_URL = "***HIDDEN***"; // إضافة DATABASE_URL
+// اطبع كل متغيرات البيئة
+console.log("🚀 All Environment Variables from Railway:");
+console.log(safeEnv);
+
+// اطبع القيم المهمة وحدها
+console.log(`ADMIN_USERNAME is: "${process.env.ADMIN_USERNAME || "Not set!"}"`);
+console.log(`ADMIN_PASSWORD is: "${process.env.ADMIN_PASSWORD ? '***SET***' : 'Not set!'}"`);
+console.log(`SESSION_SECRET is: "${process.env.SESSION_SECRET ? '***SET***' : 'Not set! Using default.'}"`);
 console.log("-----------------------------------------");
 
 // تهيئة تطبيق Express
