@@ -90,7 +90,7 @@
         <form id="documentForm" action="/add-document" method="POST">
             <div class="form-group">
                 <label for="doc_number">رقم المستند:</label>
-                <input type="text" id="doc_number" name="doc_number" value="E937028538-43">
+                <input type="text" id="doc_number" name="doc_number" value="E937028538-43" required>
             </div>
             <div class="form-group">
                 <label for="doc_type">نوع المستند:</label>
@@ -128,17 +128,19 @@
                 <label for="file_url">رابط الملف (File URL):</label>
                 <input type="url" id="file_url" name="file_url" required>
             </div>
-            <button type="submit" class="btn-submit">إضافة</button>
+            <button type="submit" class="btn-submit">إضافة / تحديث</button>
         </form>
         <div id="messageBox" class="message-box"></div>
     </div>
     <script>
         const form = document.getElementById('documentForm');
         const messageBox = document.getElementById('messageBox');
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
+            
             try {
                 const response = await fetch('/add-document', {
                     method: 'POST',
@@ -147,7 +149,9 @@
                     },
                     body: new URLSearchParams(data).toString(),
                 });
+                
                 const result = await response.text();
+                
                 if (response.ok) {
                     messageBox.textContent = result;
                     messageBox.classList.remove('message-error');

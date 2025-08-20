@@ -182,11 +182,31 @@ app.post("/add-document", (req, res, next) => {
         } else {
             // 📌 حالة الإضافة: إذا كان حقل رقم المستند فارغاً
             console.log("🔎 Adding a new document.");
+
+            // 1. استخراج آخر رقم مستند من قاعدة البيانات
+            const lastDocQuery = "SELECT doc_number FROM documents WHERE doc_number LIKE 'E937028538-43%' ORDER BY id DESC LIMIT 1";
+            const lastDocResult = await pool.query(lastDocQuery);
+            
+            let lastNumber = 0;
+            if (lastDocResult.rows.length > 0) {
+                // 2. إذا وجد آخر مستند، استخرج الجزء العددي وزد عليه 1
+                const lastDocNumberStr = lastDocResult.rows[0].doc_number;
+                const parts = lastDocNumberStr.split('-');
+                if (parts.length > 1) {
+                    lastNumber = parseInt(parts[1].substring(2), 10);
+                }
+            }
+
+            const newNumber = lastNumber + 1;
+            // 3. تنسيق الرقم الجديد ليكون من 3 خانات (مع أصفار في البداية)
+            const formattedNumber = String(newNumber).padStart(3, '0');
+            const new_doc_number = `E937028538-43-${formattedNumber}`;
+
             const verify_token = crypto.randomBytes(20).toString("hex").toUpperCase();
             const insertQuery =
                 "INSERT INTO documents (doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, file_url, verify_token) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
             const result = await pool.query(insertQuery, [
-                doc_number || "N/A", // قيمة افتراضية في حالة عدم وجود رقم
+                new_doc_number,
                 doc_type,
                 party_one,
                 party_two,
@@ -198,7 +218,7 @@ app.post("/add-document", (req, res, next) => {
                 verify_token,
             ]);
             console.log("✅ Document added successfully!");
-            res.status(200).send(`Document added successfully! Token: ${verify_token}`);
+            res.status(200).send(`Document added successfully! Document Number: ${new_doc_number}, Token: ${verify_token}`);
         }
     } catch (error) {
         console.error("❌ Error adding/updating document:", error);
