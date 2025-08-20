@@ -80,25 +80,51 @@
             background-color: #fee2e2;
             color: #991b1b;
         }
+        .search-container {
+            display: flex;
+            align-items: flex-end; /* لضمان محاذاة العناصر للأسفل */
+            gap: 1rem;
+        }
+        .search-container > div {
+            flex-grow: 1; /* لجعل حقل الإدخال يأخذ المساحة المتبقية */
+        }
+        .search-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #10b981;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .search-button:hover {
+            background-color: #059669;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
     <div class="container">
+        <a href="/search" class="btn-submit mt-4 text-center block">البحث في المستندات</a>
         <div class="header">
             <h1>إدارة المستندات</h1>
         </div>
+        
         <form id="documentForm" action="/add-document" method="POST">
-            <div class="form-group">
-                <label for="doc_number">رقم المستند:</label>
-                <input type="text" id="doc_number" name="doc_number" value="E937028538-43">
+            <div class="form-group search-container">
+                <div>
+                    <label for="doc_number">رقم المستند:</label>
+                    <input type="text" id="doc_number" name="doc_number" placeholder="أدخل رقم المستند للتحديث أو اتركه فارغاً للإضافة">
+                </div>
+                <button type="button" id="searchDocBtn" class="search-button">بحث</button>
             </div>
             <div class="form-group">
                 <label for="doc_type">نوع المستند:</label>
-                <input type="text" id="doc_type" name="doc_type" value="عقد عمل خارجي" required>
+                <input type="text" id="doc_type" name="doc_type" required>
             </div>
             <div class="form-group">
                 <label for="party_one">الطرف الأول:</label>
-                <input type="text" id="party_one" name="party_one" value="مدرسة العزيزية الخاصة للبنين" required>
+                <input type="text" id="party_one" name="party_one" required>
             </div>
             <div class="form-group">
                 <label for="party_two">الطرف الثاني:</label>
@@ -118,7 +144,7 @@
             </div>
             <div class="form-group">
                 <label for="party_one_id">هوية الطرف الأول:</label>
-                <input type="text" id="party_one_id" name="party_one_id" value="20138094" required>
+                <input type="text" id="party_one_id" name="party_one_id" required>
             </div>
             <div class="form-group">
                 <label for="party_two_id">هوية الطرف الثاني:</label>
@@ -135,12 +161,69 @@
     <script>
         const form = document.getElementById('documentForm');
         const messageBox = document.getElementById('messageBox');
-        
+        const docNumberInput = document.getElementById('doc_number');
+        const searchDocBtn = document.getElementById('searchDocBtn');
+
+        // دالة لملء الحقول ببيانات المستند
+        function populateForm(document) {
+            // قم بإزالة المتطلبات من جميع الحقول ما عدا رقم المستند
+            const requiredFields = document.querySelectorAll('input:not(#doc_number), select, textarea');
+            requiredFields.forEach(field => field.required = false);
+
+            document.getElementById('doc_type').value = document.doc_type || '';
+            document.getElementById('party_one').value = document.party_one || '';
+            document.getElementById('party_two').value = document.party_two || '';
+            document.getElementById('status').value = document.status || '';
+            document.getElementById('issue_date').value = document.issue_date ? new Date(document.issue_date).toISOString().split('T')[0] : '';
+            document.getElementById('party_one_id').value = document.party_one_id || '';
+            document.getElementById('party_two_id').value = document.party_two_id || '';
+            document.getElementById('file_url').value = document.file_url || '';
+            showMessage('تم العثور على المستند. يمكنك الآن تعديل بياناته.', 'success');
+        }
+
+        // دالة لعرض الرسائل
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.classList.remove('message-success', 'message-error');
+            messageBox.classList.add(type === 'success' ? 'message-success' : 'message-error');
+            messageBox.style.display = 'block';
+        }
+
+        // حدث النقر على زر البحث
+        searchDocBtn.addEventListener('click', async () => {
+            const doc_number = docNumberInput.value.trim();
+            if (!doc_number) {
+                showMessage('الرجاء إدخال رقم المستند للبحث.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/get-document/${doc_number}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    populateForm(result.data);
+                } else {
+                    showMessage(result.message, 'error');
+                    // تفريغ الحقول في حالة عدم العثور على المستند
+                    form.reset();
+                    docNumberInput.value = doc_number; // للحفاظ على رقم المستند الذي تم البحث عنه
+                }
+            } catch (error) {
+                console.error('Error fetching document:', error);
+                showMessage('حدث خطأ أثناء البحث عن المستند.', 'error');
+            }
+        });
+
+        // حدث إرسال النموذج (إضافة/تحديث)
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
+            // تحقق من وجود doc_number لتحديد إذا كانت العملية تحديث أو إضافة
+            const isUpdate = !!data.doc_number;
+
             try {
                 const response = await fetch('/add-document', {
                     method: 'POST',
@@ -153,23 +236,16 @@
                 const result = await response.text();
                 
                 if (response.ok) {
-                    messageBox.textContent = result;
-                    messageBox.classList.remove('message-error');
-                    messageBox.classList.add('message-success');
-                    messageBox.style.display = 'block';
-                    form.reset();
+                    showMessage(result, 'success');
+                    if (!isUpdate) {
+                        form.reset();
+                    }
                 } else {
-                    messageBox.textContent = result;
-                    messageBox.classList.remove('message-success');
-                    messageBox.classList.add('message-error');
-                    messageBox.style.display = 'block';
+                    showMessage(result, 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                messageBox.textContent = 'حدث خطأ غير متوقع.';
-                messageBox.classList.remove('message-success');
-                messageBox.classList.add('message-error');
-                messageBox.style.display = 'block';
+                showMessage('حدث خطأ غير متوقع.', 'error');
             }
         });
     </script>
