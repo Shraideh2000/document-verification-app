@@ -13,7 +13,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* تعريف الخط المستخدم في التصميم */
+        /*
+ * أضفنا هذا السطر لجعل حسابات الحجم (box-sizing) أكثر مرونة.
+ * هذا يضمن أن الحشو (padding) لا يزيد من عرض العنصر.
+ */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* تعريف الخط المستخدم في التصميم */
 @font-face {
     font-family: 'Dubai';
     src: url('./fonts/Dubai-Regular.ttf') format('opentype');
@@ -35,7 +43,7 @@ body {
 /* --- تنسيقات الشريط العلوي (الهيدر) --- */
 .header {
     background-color: #fff;
-    padding: 15px 30px;
+    padding: 15px; /* تم تعديل الحشو ليكون متسقًا */
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     position: fixed;
     top: 0;
@@ -47,12 +55,9 @@ body {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    max-width: none;
-    margin: 0;
-}
-.header {
-    padding-left: 0;
-    padding-right: 0;
+    max-width: 1200px; /* تم إضافة حد أقصى للعرض */
+    margin: 0 auto; /* تم إضافة هوامش تلقائية للوسط */
+    padding: 0 15px; /* تم إضافة حشو داخلي متسق */
 }
 .header-logo img { max-width: 160px; margin-right: 25px; }
 .header.scrolled .header-logo img {
@@ -128,7 +133,6 @@ body {
     font-size: 24px;
     color: #ffffff;
     cursor: pointer;
-    margin-right: auto;
 }
 
 /* تنسيقات شاشة اللودر */
@@ -227,7 +231,7 @@ body {
     padding-bottom: 5px; cursor: pointer; position: relative;
 }
 .footer-column h4::after {
-    content: ""; /* إخفاء الأيقونة في الديسكتوب */
+    content: "";
     font-family: FontAwesome;
     position: absolute;
     left: 0;
@@ -272,7 +276,8 @@ body {
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding-right: 0cm;
+        padding-right: 0; /* تم تعديل هذه القيمة */
+        padding-left: 0; /* تم إضافة هذا السطر */
     }
     .header-logo {
         order: 1;
@@ -347,8 +352,8 @@ body {
         order: 2;
         display: flex;
         justify-content: flex-end;
-        padding-right: 80px;
-        padding-left: 120px;
+        padding-right: 0; /* تم تعديل هذه القيمة */
+        padding-left: 0; /* تم تعديل هذه القيمة */
     }
 
     .footer-top {
@@ -370,7 +375,6 @@ body {
         padding: 15px 0;
         border-bottom: none;
     }
-    /* هذا هو الكود الذي تم تعديله لإظهار الزائد والناقص */
     .footer-column h4 .mobile-toggle {
         display: block;
         font-size: 1.2em;
