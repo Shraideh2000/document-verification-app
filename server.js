@@ -48,8 +48,8 @@ app.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: process.env.NODE_ENV === "production", 
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+            secure: false,
+            sameSite: 'lax'
         }
     })
 );
@@ -122,12 +122,12 @@ app.post("/login", (req, res) => {
     }
 });
 
-// راوت إضافة مستند جديد
+// 📌 راوت موحد لإضافة وتحديث المستندات
 app.post("/add-document", (req, res, next) => {
     if (req.session.isAuthenticated) {
         next();
     } else {
-        console.log("❌ Unauthorized attempt to add document.");
+        console.log("❌ Unauthorized attempt to add/update document.");
         res.status(401).send("Unauthorized");
     }
 }, async (req, res) => {
@@ -140,33 +140,72 @@ app.post("/add-document", (req, res, next) => {
         issue_date,
         party_one_id,
         party_two_id,
-        file_url,
+        file_url
     } = req.body;
 
-    const verify_token = crypto.randomBytes(20).toString("hex").toUpperCase();
-
     try {
-        const query =
-            "INSERT INTO documents (doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, file_url, verify_token) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
-        const result = await pool.query(query, [
-            doc_number,
-            doc_type,
-            party_one,
-            party_two,
-            status,
-            issue_date,
-            party_one_id,
-            party_two_id,
-            file_url,
-            verify_token,
-        ]);
-        console.log("✅ Document added successfully!");
-        res.status(200).send(`Document added successfully! Token: ${verify_token}`);
+        if (doc_number && doc_number.trim() !== "") {
+            // 📌 حالة التحديث: إذا كان حقل رقم المستند ليس فارغاً
+            console.log(`🔎 Updating document with doc_number: ${doc_number}`);
+            const updateQuery = `
+                UPDATE documents 
+                SET doc_type = $1, 
+                    party_one = $2, 
+                    party_two = $3, 
+                    status = $4, 
+                    issue_date = $5, 
+                    party_one_id = $6, 
+                    party_two_id = $7, 
+                    file_url = $8
+                WHERE doc_number = $9
+                RETURNING *;
+            `;
+            const result = await pool.query(updateQuery, [
+                doc_type,
+                party_one,
+                party_two,
+                status,
+                issue_date,
+                party_one_id,
+                party_two_id,
+                file_url,
+                doc_number
+            ]);
+
+            if (result.rows.length > 0) {
+                console.log("✅ Document updated successfully!");
+                res.status(200).send("Document updated successfully!");
+            } else {
+                console.log("❌ Document not found for update.");
+                res.status(404).send("Document not found. No records updated.");
+            }
+        } else {
+            // 📌 حالة الإضافة: إذا كان حقل رقم المستند فارغاً
+            console.log("🔎 Adding a new document.");
+            const verify_token = crypto.randomBytes(20).toString("hex").toUpperCase();
+            const insertQuery =
+                "INSERT INTO documents (doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, file_url, verify_token) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
+            const result = await pool.query(insertQuery, [
+                doc_number || "N/A", // قيمة افتراضية في حالة عدم وجود رقم
+                doc_type,
+                party_one,
+                party_two,
+                status,
+                issue_date,
+                party_one_id,
+                party_two_id,
+                file_url,
+                verify_token,
+            ]);
+            console.log("✅ Document added successfully!");
+            res.status(200).send(`Document added successfully! Token: ${verify_token}`);
+        }
     } catch (error) {
-        console.error("❌ Error adding document:", error);
-        res.status(500).send("An error occurred while adding the document.");
+        console.error("❌ Error adding/updating document:", error);
+        res.status(500).send("An error occurred while processing the document.");
     }
 });
+
 
 // راوت التحقق
 app.get("/verify/:token", async (req, res) => {
