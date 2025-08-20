@@ -47,12 +47,15 @@ app.use(
         secret: process.env.SESSION_SECRET || 'your_secret_key_here',
         resave: false,
         saveUninitialized: true,
-        cookie: { secure: process.env.NODE_ENV === 'production' }
+        cookie: {
+            secure: true, // 📌 السماح بالكوكيز على اتصال HTTPS فقط
+            sameSite: 'none' // 📌 السماح بإرسال الكوكيز عبر النطاقات
+        }
     })
 );
 
 // -----------------------------------------
-// 📌 التعديل هنا: استخدام DATABASE_URL فقط
+// 📌 استخدام DATABASE_URL فقط
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
