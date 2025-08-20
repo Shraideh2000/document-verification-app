@@ -37,6 +37,9 @@ console.log("-----------------------------------------");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ⚠️ أضف هذا السطر هنا لحل مشكلة الكوكيز مع الوكلاء العكسيين مثل Railway
+app.set('trust proxy', 1);
+
 // Middleware لخدمة الملفات الثابتة وتحليل البيانات المرسلة
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
@@ -48,7 +51,7 @@ app.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: true,
+            secure: true, // ⚠️ الآن سيتم إرسال الكوكيز بشكل صحيح مع HTTPS
             sameSite: 'lax'
         }
     })
@@ -90,6 +93,9 @@ app.get("/", (req, res) => {
 
 // راوت الواجهة الإدارية
 app.get("/admin", (req, res) => {
+    // عرض نوع البروتوكول في اللوجز للمساعدة في التشخيص
+    console.log(`Request protocol is: ${req.protocol}`); 
+
     if (req.session.isAuthenticated) {
         console.log("✅ Admin access granted: Session is authenticated.");
         return res.sendFile(path.join(__dirname, "public", "admin.html"));
@@ -184,7 +190,7 @@ app.post("/add-document", (req, res, next) => {
             console.log("🔎 Adding a new document.");
 
             // 1. استخراج آخر رقم مستند من قاعدة البيانات
-            const lastDocQuery = "SELECT doc_number FROM documents WHERE doc_number LIKE 'E937028538-43%' ORDER BY id DESC LIMIT 1";
+            const lastDocQuery = "SELECT doc_number FROM documents WHERE doc_number LIKE 'E937028538-43-%' ORDER BY id DESC LIMIT 1";
             const lastDocResult = await pool.query(lastDocQuery);
             
             let lastNumber = 0;
@@ -192,8 +198,8 @@ app.post("/add-document", (req, res, next) => {
                 // 2. إذا وجد آخر مستند، استخرج الجزء العددي وزد عليه 1
                 const lastDocNumberStr = lastDocResult.rows[0].doc_number;
                 const parts = lastDocNumberStr.split('-');
-                if (parts.length > 1) {
-                    lastNumber = parseInt(parts[1].substring(2), 10);
+                if (parts.length > 2) { 
+                    lastNumber = parseInt(parts[2], 10);
                 }
             }
 
