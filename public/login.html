@@ -3,32 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة المستندات</title>
+    <title>تسجيل دخول الأدمن</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* CSS Style for the login page */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
             direction: rtl;
         }
-        .container {
-            max-width: 800px;
+        .login-container {
+            max-width: 400px;
             margin: 4rem auto;
             padding: 2rem;
             background-color: #fff;
             border-radius: 1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 1px solid #e5e7eb;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .header h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: #1f2937;
         }
         .form-group {
             margin-bottom: 1.5rem;
@@ -39,17 +31,12 @@
             font-weight: 600;
             color: #4b5563;
         }
-        .form-group input, .form-group select {
+        .form-group input {
             width: 100%;
             padding: 0.75rem;
             border-radius: 0.5rem;
             border: 1px solid #d1d5db;
             background-color: #f9fafb;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
         .btn-submit {
             width: 100%;
@@ -83,82 +70,49 @@
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="container">
-        <div class="header">
-            <h1>إضافة مستند جديد</h1>
-        </div>
-        <form id="documentForm" action="/add-document" method="POST">
+    <div class="login-container">
+        <h1 class="text-center text-2xl font-bold mb-6">تسجيل دخول الأدمن</h1>
+        <form id="loginForm" action="/login" method="POST">
             <div class="form-group">
-                <label for="doc_number">رقم المستند:</label>
-                <input type="text" id="doc_number" name="doc_number" required>
+                <label for="username">اسم المستخدم:</label>
+                <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                <label for="doc_type">نوع المستند:</label>
-                <input type="text" id="doc_type" name="doc_type" required>
+                <label for="password">كلمة المرور:</label>
+                <input type="password" id="password" name="password" required>
             </div>
-            <div class="form-group">
-                <label for="party_one">الطرف الأول:</label>
-                <input type="text" id="party_one" name="party_one" required>
-            </div>
-            <div class="form-group">
-                <label for="party_two">الطرف الثاني:</label>
-                <input type="text" id="party_two" name="party_two" required>
-            </div>
-            <div class="form-group">
-                <label for="status">الحالة:</label>
-                <select id="status" name="status" required>
-                    <option value="Valid">Valid</option>
-                    <option value="Invalid">Invalid</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="issue_date">تاريخ الإصدار:</label>
-                <input type="date" id="issue_date" name="issue_date" required>
-            </div>
-            <div class="form-group">
-                <label for="party_one_id">هوية الطرف الأول:</label>
-                <input type="text" id="party_one_id" name="party_one_id" required>
-            </div>
-            <div class="form-group">
-                <label for="party_two_id">هوية الطرف الثاني:</label>
-                <input type="text" id="party_two_id" name="party_two_id" required>
-            </div>
-            <div class="form-group">
-                <label for="file_url">رابط الملف (File URL):</label>
-                <input type="url" id="file_url" name="file_url" required>
-            </div>
-            
-            <button type="submit" class="btn-submit">إضافة</button>
+            <button type="submit" class="btn-submit">تسجيل الدخول</button>
         </form>
         <div id="messageBox" class="message-box"></div>
     </div>
-
+    
     <script>
-        const form = document.getElementById('documentForm');
+        const loginForm = document.getElementById('loginForm');
         const messageBox = document.getElementById('messageBox');
-        
-        form.addEventListener('submit', async (e) => {
+
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(form);
+            const formData = new FormData(loginForm);
             const data = Object.fromEntries(formData.entries());
-            
+
             try {
-                const response = await fetch('/add-document', {
+                const response = await fetch('/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
                     body: new URLSearchParams(data).toString(),
                 });
-                
+
                 const result = await response.text();
-                
+
                 if (response.ok) {
-                    messageBox.textContent = result;
+                    messageBox.textContent = result + " جارِ إعادة التوجيه...";
                     messageBox.classList.remove('message-error');
                     messageBox.classList.add('message-success');
                     messageBox.style.display = 'block';
-                    form.reset();
+                    // 📌 إعادة التوجيه إلى صفحة إدارة المستندات
+                    window.location.href = '/admin'; 
                 } else {
                     messageBox.textContent = result;
                     messageBox.classList.remove('message-success');

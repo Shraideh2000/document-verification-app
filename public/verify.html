@@ -12,8 +12,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 
-    <style>
-        /*
+<style>
+/*
  * أضفنا هذا السطر لجعل حسابات الحجم (box-sizing) أكثر مرونة.
  * هذا يضمن أن الحشو (padding) لا يزيد من عرض العنصر.
  */
@@ -229,6 +229,7 @@ body {
 .footer-column h4 {
     font-size: 1rem; margin: 0 0 15px; border-bottom: 1px solid rgba(255,255,255,0.3);
     padding-bottom: 5px; cursor: pointer; position: relative;
+    font-weight: normal;
 }
 .footer-column h4::after {
     content: "";
@@ -241,21 +242,15 @@ body {
 }
 .footer-column ul { list-style: none; padding: 0; margin: 0; }
 .footer-column ul li a {
-    color: #fff; text-decoration: none; display: block; margin-bottom: 8px; font-size: 0.90rem;
+    color: #fff;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.90rem;
     position: relative;
 }
-.footer-column ul li a::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 1px;
-    bottom: -2px;
-    right: 0;
-    background-color: #fff;
-    transition: width 0.3s ease-in-out;
-}
-.footer-column ul li a:hover::after {
-    width: 100%;
+.footer-column ul li a:hover {
+    text-decoration: underline;
 }
 
 .footer-bottom {
@@ -348,7 +343,7 @@ body {
     }
     .mobile-menu-toggle-container {
         width: 100%;
-        background-color: #a00000;
+        background-color: rgb(138, 21, 56);
         order: 2;
         display: flex;
         justify-content: flex-end;
@@ -379,6 +374,7 @@ body {
         display: block;
         font-size: 1.2em;
         transition: transform 0.3s ease-in-out;
+        font-weight: 100;
     }
     .footer-column h4.active .mobile-toggle {
         transform: rotate(180deg);
@@ -392,9 +388,20 @@ body {
     .footer-column ul.active {
         max-height: 500px;
     }
-    .footer-column ul li a::after {
+    /* .footer-column ul li a::after {
+        content: '';
+        position: absolute;
         width: 0;
-    }
+        height: 1px;
+        bottom: -2px;
+        right: 0;
+        background-color: #fff;
+        transition: width 0.3s ease-in-out;
+    } */
+    /* .footer-column ul li a:hover::after {
+        width: 100%;
+    } */
+
     .footer-bottom {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -406,7 +413,7 @@ body {
     .footer-copy { text-align: center; order: 1; }
     .footer-social { order: 2; margin-top: 15px; }
 }
-    </style>
+</style>
 </head>
 <body>
     <header class="header">
@@ -499,7 +506,7 @@ body {
                 <div class="footer-column">
                     <h4>
                         الوزارة
-                        <i class="fa fa-plus mobile-toggle"></i>
+                        <span class="mobile-toggle">+</span>
                     </h4>
                     <ul>
                         <li><a href="https://www.mol.gov.qa/ar/ministry/Pages/About-the-Ministry.aspx">نبذة عن الوزارة</a></li>
@@ -513,7 +520,7 @@ body {
                 <div class="footer-column">
                     <h4>
                         الخدمات
-                        <i class="fa fa-plus mobile-toggle"></i>
+                        <span class="mobile-toggle">+</span>
                     </h4>
                     <ul>
                         <li><a href="https://www.mol.gov.qa/ar/services/Pages/default.aspx">خدمات إلكترونية واستمارات</a></li>
@@ -522,7 +529,7 @@ body {
                 <div class="footer-column">
                     <h4>
                         المركز الإعلامي
-                        <i class="fa fa-plus mobile-toggle"></i>
+                        <span class="mobile-toggle">+</span>
                     </h4>
                     <ul>
                         <li><a href="https://www.mol.gov.qa/ar/mediacenter/Pages/News.aspx">الأخبار</a></li>
@@ -536,7 +543,7 @@ body {
                 <div class="footer-column">
                     <h4>
                         اتصل بنا
-                        <i class="fa fa-plus mobile-toggle"></i>
+                        <span class="mobile-toggle">+</span>
                     </h4>
                     <ul>
                         <li><a href="https://www.mol.gov.qa/ar/contactus/Pages/ContactMinisty.aspx">اتصل بنا</a></li>
@@ -558,7 +565,7 @@ body {
         </div>
     </footer>
 
-   <script>
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         // إخفاء اللودر وإظهار المحتوى بعد 4 ثواني
         setTimeout(() => {
@@ -614,12 +621,21 @@ body {
                     if (otherToggle !== toggle && otherToggle.classList.contains('active')) {
                         otherToggle.classList.remove('active');
                         otherToggle.nextElementSibling.classList.remove('active');
+                        otherToggle.querySelector('.mobile-toggle').textContent = '+';
                     }
                 });
 
                 // تبديل حالة القائمة الحالية (فتح/إغلاق)
                 toggle.classList.toggle('active');
                 list.classList.toggle('active');
+                
+                // تغيير علامة الزائد إلى ناقص عند الفتح والعكس عند الإغلاق
+                const icon = toggle.querySelector('.mobile-toggle');
+                if (toggle.classList.contains('active')) {
+                    icon.textContent = '-';
+                } else {
+                    icon.textContent = '+';
+                }
             });
         });
 
