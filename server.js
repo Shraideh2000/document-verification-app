@@ -22,7 +22,7 @@ const safeEnv = { ...process.env };
 // إخفاء المتغيرات الحساسة
 if (safeEnv.ADMIN_PASSWORD) safeEnv.ADMIN_PASSWORD = "***HIDDEN***";
 if (safeEnv.SESSION_SECRET) safeEnv.SESSION_SECRET = "***HIDDEN***";
-if (safeEnv.DATABASE_URL) safeEnv.DATABASE_URL = "***HIDDEN***"; // إضافة DATABASE_URL
+if (safeEnv.DATABASE_URL) safeEnv.DATABASE_URL = "***HIDDEN***";
 // اطبع كل متغيرات البيئة
 console.log("🚀 All Environment Variables from Railway:");
 console.log(safeEnv);
@@ -51,10 +51,14 @@ app.use(
     })
 );
 
-// الاتصال بقاعدة البيانات عبر متغير بيئة
-const connectionString =
-    process.env.DATABASE_URL ||
-    "postgresql://neondb_owner:npg_T1CqDrVcwA3m@ep-still-sky-a2bmknia-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+// -----------------------------------------
+// 📌 التعديل هنا: استخدام DATABASE_URL فقط
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.error("❌ FATAL: DATABASE_URL environment variable is not set. Exiting.");
+    process.exit(1);
+}
 
 const pool = new Pool({
     connectionString: connectionString,
@@ -106,8 +110,9 @@ app.post("/login", (req, res) => {
     if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
         // تسجيل الدخول بنجاح!
         req.session.isAuthenticated = true;
-        console.log("✅ Login successful! Session created.");
-        res.status(200).send("Login successful!");
+        console.log("✅ Login successful! Session created. Redirecting to /admin");
+        // 📌 التعديل هنا: إعادة التوجيه مباشرة
+        res.redirect('/admin');
     } else {
         console.log("❌ Invalid username or password entered.");
         res.status(401).send("Invalid username or password.");
