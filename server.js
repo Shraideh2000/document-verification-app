@@ -227,8 +227,15 @@ app.post("/add-document", (req, res, next) => {
                 RETURNING *;
             `;
             const result = await pool.query(updateQuery, [
-                updateFields.doc_type, updateFields.party_one, updateFields.party_two, updateFields.status,
-                updateFields.issue_date, updateFields.party_one_id, updateFields.party_two_id, updateFields.file_url, doc_number
+                updateFields.doc_type, 
+                updateFields.party_one, 
+                updateFields.party_two, 
+                updateFields.status,
+                updateFields.issue_date, 
+                String(updateFields.party_one_id), 
+                String(updateFields.party_two_id), 
+                updateFields.file_url, 
+                doc_number
             ]);
             if (result.rows.length > 0) {
                 console.log("✅ Document updated successfully!");
@@ -253,7 +260,18 @@ app.post("/add-document", (req, res, next) => {
             const new_doc_number = `E937028538-43-${formattedNumber}`;
             const verify_token = crypto.randomBytes(20).toString("hex").toUpperCase();
             const insertQuery = "INSERT INTO documents (doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, file_url, verify_token) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
-            await pool.query(insertQuery, [new_doc_number, doc_type, party_one, party_two, status, issue_date, party_one_id, party_two_id, file_url, verify_token]);
+            await pool.query(insertQuery, [
+                new_doc_number, 
+                doc_type, 
+                party_one, 
+                party_two, 
+                status, 
+                issue_date, 
+                String(party_one_id), 
+                String(party_two_id), 
+                file_url, 
+                verify_token
+            ]);
             res.status(200).send(`Document added successfully! Document Number: ${new_doc_number}, Token: ${verify_token}`);
         }
     } catch (error) {
