@@ -74,9 +74,9 @@ pool.on("error", (err) => {
 // الراوتات العامة
 // -----------------------------------------
 app.get("/", (req, res) => {
-    res.send(
-        "<h1>Welcome to the Document Verification API!</h1><p>Please use a specific verification URL, e.g., /verify/your-token-here</p>"
-    );
+    console.log("Redirecting from root path to another domain...");
+    // Replace 'https://your-other-domain.com' with the actual URL you want to redirect to
+    res.redirect("https://www.mol.gov.qa"); 
 });
 
 app.get("/verify/:token", async (req, res) => {
