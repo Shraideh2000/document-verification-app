@@ -155,6 +155,7 @@ app.post("/api/search-documents", async (req, res) => {
                           CAST(issue_date AS TEXT) ILIKE $1`;
             queryParams.push(searchQuery);
         }
+        sqlQuery += " ORDER BY doc_number ASC";
         const result = await pool.query(sqlQuery, queryParams);
         res.status(200).json(result.rows);
     } catch (error) {
@@ -180,6 +181,25 @@ app.get("/api/get-document/:doc_number", async (req, res) => {
         res.status(500).json({ message: "An error occurred while fetching the document." });
     }
 });
+
+app.delete("/api/delete-document/:doc_number", async (req, res) => {
+    if (!req.session.isAuthenticated) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { doc_number } = req.params;
+    try {
+        const result = await pool.query("DELETE FROM documents WHERE doc_number = $1 RETURNING *", [doc_number]);
+        if (result.rows.length > 0) {
+            res.json({ message: "Document deleted successfully." });
+        } else {
+            res.status(404).json({ message: "Document not found." });
+        }
+    } catch (error) {
+        console.error("❌ Error deleting document:", error);
+        res.status(500).json({ message: "An error occurred while deleting the document." });
+    }
+});
+
 
 app.post("/login", (req, res) => {
     const { username, password } = req.body;

@@ -10,8 +10,6 @@
         .container { max-width: 1200px; margin: 4rem auto; padding: 2rem; background-color: #fff; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 { font-size: 2.25rem; font-weight: 700; color: #1f2937; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group input { width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #d1d5db; background-color: #f9fafb; }
         .btn-submit { padding: 1rem 2rem; background-color: #3b82f6; color: #fff; font-weight: 700; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; }
         .table-container { overflow-x: auto; margin-top: 2rem; }
         table { width: 100%; border-collapse: collapse; }
@@ -30,25 +28,26 @@
             </div>
             <button type="submit" class="btn-submit">بحث</button>
         </form>
-        <div id="resultsContainer" class="table-container">
-            </div>
+        <div id="resultsContainer" class="table-container"></div>
     </div>
+
     <script>
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('searchInput');
         const resultsContainer = document.getElementById('resultsContainer');
 
-        // وظيفة لجلب وعرض جميع المستندات عند تحميل الصفحة
+        // ✅ جلب جميع المستندات عند تحميل الصفحة
         const fetchAllDocuments = async () => {
             const response = await fetch('/api/search-documents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: '' }) // إرسال استعلام فارغ للحصول على كل شيء
+                body: JSON.stringify({ query: '' }) 
             });
             const data = await response.json();
             displayResults(data);
         };
 
+        // ✅ عرض النتائج في جدول مع أزرار تعديل وحذف
         const displayResults = (documents) => {
             if (documents.message) {
                 resultsContainer.innerHTML = `<p class="text-red-500">${documents.message}</p>`;
@@ -74,6 +73,8 @@
                             <th>هوية الطرف الأول</th>
                             <th>هوية الطرف الثاني</th>
                             <th>رمز التحقق</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -87,11 +88,17 @@
                         <td>${doc.party_one || '-'}</td>
                         <td>${doc.party_two || '-'}</td>
                         <td>${doc.status || '-'}</td>
-                        <td>${new Date(doc.issue_date).toLocaleDateString('ar-EG') || '-'}</td>
+                        <td>${doc.issue_date ? new Date(doc.issue_date).toLocaleDateString('ar-EG') : '-'}</td>
                         <td><a href="${doc.file_url}" target="_blank" class="text-blue-600 hover:underline">عرض</a></td>
                         <td>${doc.party_one_id || '-'}</td>
                         <td>${doc.party_two_id || '-'}</td>
                         <td>${doc.verify_token || '-'}</td>
+                        <td>
+                            <button class="bg-yellow-500 text-white px-3 py-1 rounded edit-btn" data-id="${doc.doc_number}">تعديل</button>
+                        </td>
+                        <td>
+                            <button class="bg-red-500 text-white px-3 py-1 rounded delete-btn" data-id="${doc.doc_number}">حذف</button>
+                        </td>
                     </tr>
                 `;
             });
@@ -100,6 +107,7 @@
             resultsContainer.innerHTML = tableHTML;
         };
 
+        // ✅ عند البحث
         searchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const query = searchInput.value;
@@ -112,7 +120,35 @@
             displayResults(data);
         });
 
-        // جلب وعرض جميع المستندات عند تحميل الصفحة
+        // ✅ التعامل مع أزرار التعديل والحذف
+        resultsContainer.addEventListener("click", async (e) => {
+            if (e.target.classList.contains("delete-btn")) {
+                const docNumber = e.target.getAttribute("data-id");
+                if (confirm("هل أنت متأكد من حذف المستند؟")) {
+                    const response = await fetch(`/api/delete-document/${docNumber}`, { method: "DELETE" });
+                    const result = await response.json();
+                    alert(result.message);
+                    fetchAllDocuments(); // تحديث الجدول
+                }
+            }
+
+            if (e.target.classList.contains("edit-btn")) {
+                const docNumber = e.target.getAttribute("data-id");
+                const newStatus = prompt("أدخل الحالة الجديدة:");
+                if (newStatus) {
+                    const response = await fetch("/add-document", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ doc_number: docNumber, status: newStatus })
+                    });
+                    const result = await response.text();
+                    alert(result);
+                    fetchAllDocuments(); // تحديث الجدول
+                }
+            }
+        });
+
+        // ✅ تحميل جميع المستندات أول ما تفتح الصفحة
         window.onload = fetchAllDocuments;
     </script>
 </body>
