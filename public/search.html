@@ -7,116 +7,109 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; direction: rtl; }
-        .container { max-width: 1200px; margin: 4rem auto; padding: 2rem; background-color: #fff; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
-        .header { text-align: center; margin-bottom: 2rem; }
-        .header h1 { font-size: 2.25rem; font-weight: 700; color: #1f2937; }
-        .btn-submit { padding: 1rem 2rem; background-color: #3b82f6; color: #fff; font-weight: 700; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; }
-        .table-container { overflow-x: auto; margin-top: 2rem; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.5rem; border: 1px solid #e5e7eb; text-align: right; vertical-align: middle; }
-        th { background-color: #f1f5f9; font-weight: 600; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 1.25rem; background-color: #fff; border-radius: 0.75rem; box-shadow: 0 4px 8px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; }
+        .header { text-align: center; margin-bottom: 1rem; }
+        .header h1 { font-size: 1.6rem; font-weight: 700; color: #1f2937; }
+        .btn-submit { padding: 0.6rem 1rem; background-color: #3b82f6; color: #fff; font-weight: 700; border-radius: 0.5rem; transition: background-color 0.15s; cursor: pointer; }
+        .table-container { margin-top: 1rem; width: 100%; overflow: visible; } /* no horizontal scroll */
+        table { width: 100%; border-collapse: collapse; table-layout: auto; } /* allow columns to size to content */
+        th, td { padding: 0.45rem 0.5rem; border: 1px solid #e5e7eb; text-align: right; vertical-align: middle; }
+        th { background-color: #f1f5f9; font-weight: 600; font-size: 0.9rem; }
+        td input, td textarea { width: 100%; box-sizing: border-box; font-size: 0.85rem; }
         input[readonly], textarea[readonly] { background-color: transparent; border: none; padding: 0; }
-        input.editable, textarea.editable { background-color: #fff; border: 1px solid #cbd5e1; padding: 0.35rem; border-radius: 0.25rem; }
-        .actions { display:flex; gap:0.4rem; justify-content: flex-end; }
+        input.editable, textarea.editable { background-color: #fff; border: 1px solid #cbd5e1; padding: 0.25rem; border-radius: 0.25rem; }
+        /* allow long tokens/URLs to wrap */
+        .break-all { word-break: break-all; white-space: normal; }
+        .actions { display:flex; gap:0.35rem; justify-content: flex-end; align-items: center; }
+        /* limit very wide columns (like file_url) but still wrap */
+        .col-file { max-width: 220px; }
+        .col-token { max-width: 160px; }
+        @media (max-width: 900px) {
+            table, thead, tbody, th, td, tr { display: block; } /* stack on small screens */
+            thead { display: none; }
+            tr { margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem; }
+            td { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+            td::before { content: attr(data-label); font-weight: 600; width: 40%; text-align: left; }
+            .actions { justify-content: flex-start; }
+        }
     </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="bg-gray-100 p-4">
     <div class="container">
         <div class="header">
             <h1>البحث في المستندات</h1>
         </div>
 
-        <form id="searchForm" class="flex items-center gap-4">
-            <div class="flex-grow">
-                <input type="text" id="searchInput" name="query" placeholder="ابحث برقم المستند، النوع، أو اسم الأطراف..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <form id="searchForm" class="flex items-center gap-3">
+            <div style="flex:1;">
+                <input type="text" id="searchInput" name="query" placeholder="ابحث برقم المستند، النوع، أو اسم الأطراف..." class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="submit" class="btn-submit">بحث</button>
         </form>
 
-        <div id="resultsContainer" class="table-container mt-6"></div>
+        <div id="resultsContainer" class="table-container"></div>
     </div>
 
 <script>
-const searchForm = document.getElementById('searchForm');
-const searchInput = document.getElementById('searchInput');
-const resultsContainer = document.getElementById('resultsContainer');
-
-// helper: format ISO date -> yyyy-mm-dd
+/* helper functions */
+function escapeHtml(str) {
+    return String(str||'')
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
 function toInputDate(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     if (isNaN(d)) return '';
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
-// fetch wrapper with credentials
-async function myFetch(url, opts = {}) {
+async function myFetch(url, opts={}) {
     opts.credentials = opts.credentials || 'same-origin';
     return fetch(url, opts);
 }
 
-// fetch all documents
-const fetchAllDocuments = async () => {
+/* main */
+const searchForm = document.getElementById('searchForm');
+const resultsContainer = document.getElementById('resultsContainer');
+const searchInput = document.getElementById('searchInput');
+
+async function fetchAllDocuments(q='') {
     try {
         const res = await myFetch('/api/search-documents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: '' })
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ query: q })
         });
         if (!res.ok) {
-            if (res.status === 401) {
-                alert('غير مصدق. الرجاء تسجيل الدخول.');
-                window.location.href = '/admin';
-                return;
-            }
+            if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href='/admin'; return; }
             const err = await res.json().catch(()=>({message:'خطأ'}));
             resultsContainer.innerHTML = `<p class="text-red-500">${err.message}</p>`;
             return;
         }
         const data = await res.json();
-        displayResults(data);
+        renderTable(data);
     } catch (err) {
         console.error(err);
         resultsContainer.innerHTML = `<p class="text-red-500">خطأ في الاتصال بالسيرفر.</p>`;
     }
-};
+}
 
-// display table with inputs (readonly by default)
-function displayResults(documents) {
-    if (!Array.isArray(documents)) {
-        resultsContainer.innerHTML = `<p class="text-red-500">${documents.message || 'خطأ في البيانات'}</p>`;
-        return;
-    }
-    if (documents.length === 0) {
-        resultsContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">لا توجد نتائج مطابقة.</p>';
-        return;
-    }
+searchForm.addEventListener('submit', (e)=>{ e.preventDefault(); fetchAllDocuments(searchInput.value); });
 
-    let tableHTML = `
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead>
-                <tr>
-                    <th>رقم المستند</th>
-                    <th>نوع المستند</th>
-                    <th>الطرف الأول</th>
-                    <th>الطرف الثاني</th>
-                    <th>الحالة</th>
-                    <th>تاريخ الإصدار</th>
-                    <th>رابط الملف</th>
-                    <th>هوية الطرف الأول</th>
-                    <th>هوية الطرف الثاني</th>
-                    <th>رمز التحقق</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+function renderTable(documents) {
+    if (!Array.isArray(documents)) { resultsContainer.innerHTML = `<p class="text-red-500">${documents.message||'خطأ'}</p>`; return; }
+    if (documents.length === 0) { resultsContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">لا توجد نتائج مطابقة.</p>'; return; }
+
+    let html = `<table><thead><tr>
+        <th>رقم المستند</th><th>نوع المستند</th><th>الطرف الأول</th><th>الطرف الثاني</th><th>الحالة</th>
+        <th>تاريخ الإصدار</th><th class="col-file">رابط الملف</th><th>هوية الطرف الأول</th><th>هوية الطرف الثاني</th>
+        <th class="col-token">رمز التحقق</th><th>إجراءات</th>
+    </tr></thead><tbody>`;
 
     documents.forEach(doc => {
-        // prepare safe values
         const docNumber = doc.doc_number || '';
         const docType = doc.doc_type || '';
         const partyOne = doc.party_one || '';
@@ -128,148 +121,93 @@ function displayResults(documents) {
         const partyTwoId = doc.party_two_id || '';
         const verifyToken = doc.verify_token || '';
 
-        // Each input has data-field attribute and data-original to allow cancel
-        tableHTML += `
-            <tr data-doc="${docNumber}">
-                <td>
-                    <input type="text" data-field="doc_number" value="${escapeHtml(docNumber)}" readonly class="w-full" />
-                </td>
-                <td>
-                    <input type="text" data-field="doc_type" value="${escapeHtml(docType)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="party_one" value="${escapeHtml(partyOne)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="party_two" value="${escapeHtml(partyTwo)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="status" value="${escapeHtml(status)}" readonly />
-                </td>
-                <td>
-                    <input type="date" data-field="issue_date" value="${issueDate}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="file_url" value="${escapeHtml(fileUrl)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="party_one_id" value="${escapeHtml(partyOneId)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="party_two_id" value="${escapeHtml(partyTwoId)}" readonly />
-                </td>
-                <td>
-                    <input type="text" data-field="verify_token" value="${escapeHtml(verifyToken)}" readonly />
-                </td>
-                <td class="actions">
-                    <button class="edit-btn bg-yellow-500 text-white px-3 py-1 rounded" data-id="${escapeAttr(docNumber)}">تعديل</button>
-                    <button class="save-btn bg-green-600 text-white px-3 py-1 rounded hidden" data-id="${escapeAttr(docNumber)}">حفظ</button>
-                    <button class="cancel-btn bg-gray-400 text-white px-3 py-1 rounded hidden">إلغاء</button>
-                    <button class="delete-btn bg-red-500 text-white px-3 py-1 rounded" data-id="${escapeAttr(docNumber)}">حذف</button>
-                </td>
-            </tr>
-        `;
+        html += `<tr data-party-two="${escapeHtml(partyTwoId)}">
+            <td data-label="رقم المستند"><input data-field="doc_number" value="${escapeHtml(docNumber)}" readonly></td>
+            <td data-label="نوع المستند"><input data-field="doc_type" value="${escapeHtml(docType)}" readonly></td>
+            <td data-label="الطرف الأول"><input data-field="party_one" value="${escapeHtml(partyOne)}" readonly></td>
+            <td data-label="الطرف الثاني"><input data-field="party_two" value="${escapeHtml(partyTwo)}" readonly></td>
+            <td data-label="الحالة"><input data-field="status" value="${escapeHtml(status)}" readonly></td>
+            <td data-label="تاريخ الإصدار"><input type="date" data-field="issue_date" value="${issueDate}" readonly></td>
+            <td class="col-file break-all" data-label="رابط الملف"><input data-field="file_url" value="${escapeHtml(fileUrl)}" readonly></td>
+            <td data-label="هوية الطرف الأول"><input data-field="party_one_id" value="${escapeHtml(partyOneId)}" readonly></td>
+            <td data-label="هوية الطرف الثاني"><input data-field="party_two_id" value="${escapeHtml(partyTwoId)}" readonly></td>
+            <td class="col-token break-all" data-label="رمز التحقق"><input data-field="verify_token" value="${escapeHtml(verifyToken)}" readonly></td>
+            <td data-label="إجراءات" class="actions">
+                <button class="edit-btn bg-yellow-500 text-white px-2 py-1 rounded">تعديل</button>
+                <button class="save-btn bg-green-600 text-white px-2 py-1 rounded hidden">حفظ</button>
+                <button class="cancel-btn bg-gray-400 text-white px-2 py-1 rounded hidden">إلغاء</button>
+                <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded">حذف</button>
+            </td>
+        </tr>`;
     });
 
-    tableHTML += `</tbody></table>`;
-    resultsContainer.innerHTML = tableHTML;
+    html += `</tbody></table>`;
+    resultsContainer.innerHTML = html;
 
-    // store original values for each row (for cancel)
-    document.querySelectorAll('tr[data-doc]').forEach(row => {
-        const inputs = row.querySelectorAll('input[data-field]');
-        inputs.forEach(inp => {
+    // save original values to data-original
+    document.querySelectorAll('tr[data-party-two]').forEach(row=>{
+        row.querySelectorAll('input[data-field]').forEach(inp=>{
             inp.dataset.original = inp.value;
         });
     });
 }
 
-// escape helpers to avoid injection in value attributes
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-}
-function escapeAttr(str){ return escapeHtml(str); }
-
-// handle form submit (search)
-searchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const q = searchInput.value;
-    try {
-        const res = await myFetch('/api/search-documents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: q })
-        });
-        if (!res.ok) {
-            if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
-            const err = await res.json().catch(()=>({message:'خطأ'}));
-            resultsContainer.innerHTML = `<p class="text-red-500">${err.message}</p>`;
-            return;
-        }
-        const data = await res.json();
-        displayResults(data);
-    } catch (err) {
-        console.error(err);
-        resultsContainer.innerHTML = `<p class="text-red-500">خطأ في الاتصال بالسيرفر.</p>`;
-    }
-});
-
-// delegate clicks for edit/save/cancel/delete
+/* delegate click */
 resultsContainer.addEventListener('click', async (e) => {
-    const row = e.target.closest('tr[data-doc]');
+    const row = e.target.closest('tr[data-party-two]');
     if (!row) return;
+    const partyTwoId = row.getAttribute('data-party-two');
 
     // Edit
     if (e.target.classList.contains('edit-btn')) {
-        toggleEditMode(row, true);
+        row.querySelectorAll('input[data-field]').forEach(i => {
+            // allow editing for all fields INCLUDING verify_token
+            i.removeAttribute('readonly');
+            i.classList.add('editable');
+        });
+        row.querySelector('.edit-btn').classList.add('hidden');
+        row.querySelector('.save-btn').classList.remove('hidden');
+        row.querySelector('.cancel-btn').classList.remove('hidden');
         return;
     }
 
     // Cancel
     if (e.target.classList.contains('cancel-btn')) {
-        // revert values from data-original
-        row.querySelectorAll('input[data-field]').forEach(inp => {
-            inp.value = inp.dataset.original || '';
-            setReadonly(inp, true);
+        row.querySelectorAll('input[data-field]').forEach(i => {
+            i.value = i.dataset.original || '';
+            i.setAttribute('readonly','readonly');
+            i.classList.remove('editable');
         });
-        toggleEditMode(row, false);
+        row.querySelector('.edit-btn').classList.remove('hidden');
+        row.querySelector('.save-btn').classList.add('hidden');
+        row.querySelector('.cancel-btn').classList.add('hidden');
         return;
     }
 
-    // Save
+    // Save => use party_two_id as identifier and call server endpoint /api/edit-by-party-two
     if (e.target.classList.contains('save-btn')) {
-        const docNumberInput = row.querySelector('input[data-field="doc_number"]');
-        const doc_number = docNumberInput.value.trim();
-        if (!doc_number) { alert('رقم المستند مطلوب'); return; }
-
-        // gather all fields
         const payload = {};
-        row.querySelectorAll('input[data-field]').forEach(inp => {
-            const field = inp.getAttribute('data-field');
-            let val = inp.value;
-            // for empty strings, send null? keep string to match server behavior
-            payload[field] = val;
+        row.querySelectorAll('input[data-field]').forEach(i => {
+            payload[i.getAttribute('data-field')] = i.value;
         });
+        // ensure we include party_two_id (the identifier we use)
+        payload.party_two_id = payload.party_two_id || partyTwoId;
 
         try {
-            const res = await myFetch('/add-document', {
+            const res = await myFetch('/api/edit-by-party-two', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type':'application/json'},
                 body: JSON.stringify(payload)
             });
             if (!res.ok) {
-                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
-                const text = await res.text().catch(()=> 'خطأ');
-                alert('خطأ عند الحفظ: ' + text);
+                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href='/admin'; return; }
+                const err = await res.json().catch(()=>({message:'خطأ'}));
+                alert('خطأ: ' + (err.message||'فشل الحفظ'));
                 return;
             }
-            const text = await res.text().catch(()=> 'تم الحفظ');
-            alert(text);
-            await fetchAllDocuments();
+            const result = await res.json().catch(()=> ({message:'تم الحفظ'}));
+            alert(result.message || 'تم الحفظ');
+            await fetchAllDocuments(); // refresh
         } catch (err) {
             console.error(err);
             alert('خطأ أثناء الحفظ.');
@@ -277,21 +215,20 @@ resultsContainer.addEventListener('click', async (e) => {
         return;
     }
 
-    // Delete
+    // Delete => call new endpoint delete-by-party-two
     if (e.target.classList.contains('delete-btn')) {
-        const docNumber = e.target.getAttribute('data-id');
         if (!confirm('هل أنت متأكد من حذف المستند؟')) return;
         try {
-            const res = await myFetch(`/api/delete-document/${encodeURIComponent(docNumber)}`, {
+            const res = await myFetch(`/api/delete-by-party-two/${encodeURIComponent(partyTwoId)}`, {
                 method: 'DELETE'
             });
             if (!res.ok) {
-                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
+                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href='/admin'; return; }
                 const err = await res.json().catch(()=>({message:'خطأ'}));
                 alert(err.message || 'فشل الحذف');
                 return;
             }
-            const result = await res.json();
+            const result = await res.json().catch(()=>({message:'تم الحذف'}));
             alert(result.message || 'تم الحذف');
             await fetchAllDocuments();
         } catch (err) {
@@ -302,47 +239,8 @@ resultsContainer.addEventListener('click', async (e) => {
     }
 });
 
-// helper: enable/disable inputs and show/hide buttons
-function toggleEditMode(row, editing) {
-    const inputs = row.querySelectorAll('input[data-field]');
-    inputs.forEach(inp => setReadonly(inp, !editing));
-
-    const editBtn = row.querySelector('.edit-btn');
-    const saveBtn = row.querySelector('.save-btn');
-    const cancelBtn = row.querySelector('.cancel-btn');
-
-    if (editing) {
-        editBtn.classList.add('hidden');
-        saveBtn.classList.remove('hidden');
-        cancelBtn.classList.remove('hidden');
-
-        // add editable class for styling
-        inputs.forEach(i => i.classList.add('editable'));
-
-        // store original values if not already stored
-        inputs.forEach(inp => {
-            if (typeof inp.dataset.original === 'undefined') inp.dataset.original = inp.value;
-        });
-    } else {
-        editBtn.classList.remove('hidden');
-        saveBtn.classList.add('hidden');
-        cancelBtn.classList.add('hidden');
-
-        inputs.forEach(i => i.classList.remove('editable'));
-    }
-}
-
-function setReadonly(inp, ro) {
-    if (ro) {
-        inp.setAttribute('readonly', 'readonly');
-        // remove type=date special UI? keep date readonly supported
-    } else {
-        inp.removeAttribute('readonly');
-    }
-}
-
-// initial load
-window.onload = fetchAllDocuments;
+/* load */
+window.onload = () => fetchAllDocuments();
 </script>
 </body>
 </html>

@@ -134,6 +134,116 @@ app.get("/search", (req, res) => {
     console.log("❌ Unauthorized access to search page.");
     res.status(401).send("Unauthorized");
 });
+////////////////////////////////////
+//Search Page Delete & Edit Routes//
+/////////////////////////////////////
+// ======================
+// راوت لتعديل المستند بناءً على party_two_id
+// ======================
+app.post("/api/edit-by-party-two", async (req, res) => {
+    if (!req.session.isAuthenticated) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const {
+        party_two_id,
+        doc_number,
+        doc_type,
+        party_one,
+        party_two,
+        status,
+        issue_date,
+        party_one_id,
+        file_url,
+        verify_token
+    } = req.body;
+
+    if (!party_two_id) {
+        return res.status(400).json({ message: "party_two_id is required" });
+    }
+
+    try {
+        // تأكد أن السجل موجود
+        const old = await pool.query("SELECT * FROM documents WHERE party_two_id = $1 LIMIT 1", [String(party_two_id)]);
+        if (old.rows.length === 0) {
+            return res.status(404).json({ message: "Document not found for provided party_two_id." });
+        }
+
+        const oldData = old.rows[0];
+
+        const updateFields = {
+            doc_number: doc_number || oldData.doc_number,
+            doc_type: doc_type || oldData.doc_type,
+            party_one: party_one || oldData.party_one,
+            party_two: party_two || oldData.party_two,
+            status: status || oldData.status,
+            issue_date: issue_date || oldData.issue_date,
+            party_one_id: party_one_id || oldData.party_one_id,
+            // party_two_id: party_two_id || oldData.party_two_id, // identifier; we don't usually change it
+            file_url: file_url || oldData.file_url,
+            verify_token: verify_token || oldData.verify_token
+        };
+
+        const updateQuery = `
+            UPDATE documents
+            SET doc_number = $1,
+                doc_type = $2,
+                party_one = $3,
+                party_two = $4,
+                status = $5,
+                issue_date = $6,
+                party_one_id = $7,
+                file_url = $8,
+                verify_token = $9
+            WHERE party_two_id = $10
+            RETURNING *;
+        `;
+
+        const params = [
+            updateFields.doc_number,
+            updateFields.doc_type,
+            updateFields.party_one,
+            updateFields.party_two,
+            updateFields.status,
+            updateFields.issue_date,
+            String(updateFields.party_one_id),
+            updateFields.file_url,
+            updateFields.verify_token,
+            String(party_two_id)
+        ];
+
+        const result = await pool.query(updateQuery, params);
+        if (result.rows.length > 0) {
+            return res.json({ message: "Document updated successfully.", data: result.rows[0] });
+        } else {
+            return res.status(500).json({ message: "Failed to update document." });
+        }
+
+    } catch (err) {
+        console.error("❌ Error in edit-by-party-two:", err);
+        res.status(500).json({ message: "Server error while updating document." });
+    }
+});
+
+// ======================
+// راوت حذف بناءً على party_two_id
+// ======================
+app.delete("/api/delete-by-party-two/:party_two_id", async (req, res) => {
+    if (!req.session.isAuthenticated) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { party_two_id } = req.params;
+    try {
+        const result = await pool.query("DELETE FROM documents WHERE party_two_id = $1 RETURNING *", [String(party_two_id)]);
+        if (result.rows.length > 0) {
+            return res.json({ message: "Document deleted successfully." });
+        } else {
+            return res.status(404).json({ message: "Document not found." });
+        }
+    } catch (err) {
+        console.error("❌ Error deleting by party_two_id:", err);
+        res.status(500).json({ message: "Server error while deleting document." });
+    }
+});
 
 // راوت جديد لمعالجة طلب البحث (Admin only)
 app.post("/api/search-documents", async (req, res) => {
