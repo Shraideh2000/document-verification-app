@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>البحث في المستندات</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,8 +13,11 @@
         .btn-submit { padding: 1rem 2rem; background-color: #3b82f6; color: #fff; font-weight: 700; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; }
         .table-container { overflow-x: auto; margin-top: 2rem; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.75rem; border: 1px solid #e5e7eb; text-align: right; }
+        th, td { padding: 0.5rem; border: 1px solid #e5e7eb; text-align: right; vertical-align: middle; }
         th { background-color: #f1f5f9; font-weight: 600; }
+        input[readonly], textarea[readonly] { background-color: transparent; border: none; padding: 0; }
+        input.editable, textarea.editable { background-color: #fff; border: 1px solid #cbd5e1; padding: 0.35rem; border-radius: 0.25rem; }
+        .actions { display:flex; gap:0.4rem; justify-content: flex-end; }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
@@ -22,134 +25,324 @@
         <div class="header">
             <h1>البحث في المستندات</h1>
         </div>
+
         <form id="searchForm" class="flex items-center gap-4">
             <div class="flex-grow">
                 <input type="text" id="searchInput" name="query" placeholder="ابحث برقم المستند، النوع، أو اسم الأطراف..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="submit" class="btn-submit">بحث</button>
         </form>
-        <div id="resultsContainer" class="table-container"></div>
+
+        <div id="resultsContainer" class="table-container mt-6"></div>
     </div>
 
-    <script>
-        const searchForm = document.getElementById('searchForm');
-        const searchInput = document.getElementById('searchInput');
-        const resultsContainer = document.getElementById('resultsContainer');
+<script>
+const searchForm = document.getElementById('searchForm');
+const searchInput = document.getElementById('searchInput');
+const resultsContainer = document.getElementById('resultsContainer');
 
-        // ✅ جلب جميع المستندات عند تحميل الصفحة
-        const fetchAllDocuments = async () => {
-            const response = await fetch('/api/search-documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: '' }) 
-            });
-            const data = await response.json();
-            displayResults(data);
-        };
+// helper: format ISO date -> yyyy-mm-dd
+function toInputDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+}
 
-        // ✅ عرض النتائج في جدول مع أزرار تعديل وحذف
-        const displayResults = (documents) => {
-            if (documents.message) {
-                resultsContainer.innerHTML = `<p class="text-red-500">${documents.message}</p>`;
+// fetch wrapper with credentials
+async function myFetch(url, opts = {}) {
+    opts.credentials = opts.credentials || 'same-origin';
+    return fetch(url, opts);
+}
+
+// fetch all documents
+const fetchAllDocuments = async () => {
+    try {
+        const res = await myFetch('/api/search-documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: '' })
+        });
+        if (!res.ok) {
+            if (res.status === 401) {
+                alert('غير مصدق. الرجاء تسجيل الدخول.');
+                window.location.href = '/admin';
                 return;
             }
+            const err = await res.json().catch(()=>({message:'خطأ'}));
+            resultsContainer.innerHTML = `<p class="text-red-500">${err.message}</p>`;
+            return;
+        }
+        const data = await res.json();
+        displayResults(data);
+    } catch (err) {
+        console.error(err);
+        resultsContainer.innerHTML = `<p class="text-red-500">خطأ في الاتصال بالسيرفر.</p>`;
+    }
+};
 
-            if (documents.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">لا توجد نتائج مطابقة.</p>';
-                return;
-            }
+// display table with inputs (readonly by default)
+function displayResults(documents) {
+    if (!Array.isArray(documents)) {
+        resultsContainer.innerHTML = `<p class="text-red-500">${documents.message || 'خطأ في البيانات'}</p>`;
+        return;
+    }
+    if (documents.length === 0) {
+        resultsContainer.innerHTML = '<p class="text-gray-500 text-center mt-4">لا توجد نتائج مطابقة.</p>';
+        return;
+    }
 
-            let tableHTML = `
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
-                        <tr>
-                            <th>رقم المستند</th>
-                            <th>نوع المستند</th>
-                            <th>الطرف الأول</th>
-                            <th>الطرف الثاني</th>
-                            <th>الحالة</th>
-                            <th>تاريخ الإصدار</th>
-                            <th>رابط الملف</th>
-                            <th>هوية الطرف الأول</th>
-                            <th>هوية الطرف الثاني</th>
-                            <th>رمز التحقق</th>
-                            <th>تعديل</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+    let tableHTML = `
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th>رقم المستند</th>
+                    <th>نوع المستند</th>
+                    <th>الطرف الأول</th>
+                    <th>الطرف الثاني</th>
+                    <th>الحالة</th>
+                    <th>تاريخ الإصدار</th>
+                    <th>رابط الملف</th>
+                    <th>هوية الطرف الأول</th>
+                    <th>هوية الطرف الثاني</th>
+                    <th>رمز التحقق</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
-            documents.forEach(doc => {
-                tableHTML += `
-                    <tr>
-                        <td>${doc.doc_number || '-'}</td>
-                        <td>${doc.doc_type || '-'}</td>
-                        <td>${doc.party_one || '-'}</td>
-                        <td>${doc.party_two || '-'}</td>
-                        <td>${doc.status || '-'}</td>
-                        <td>${doc.issue_date ? new Date(doc.issue_date).toLocaleDateString('ar-EG') : '-'}</td>
-                        <td><a href="${doc.file_url}" target="_blank" class="text-blue-600 hover:underline">عرض</a></td>
-                        <td>${doc.party_one_id || '-'}</td>
-                        <td>${doc.party_two_id || '-'}</td>
-                        <td>${doc.verify_token || '-'}</td>
-                        <td>
-                            <button class="bg-yellow-500 text-white px-3 py-1 rounded edit-btn" data-id="${doc.doc_number}">تعديل</button>
-                        </td>
-                        <td>
-                            <button class="bg-red-500 text-white px-3 py-1 rounded delete-btn" data-id="${doc.doc_number}">حذف</button>
-                        </td>
-                    </tr>
-                `;
-            });
+    documents.forEach(doc => {
+        // prepare safe values
+        const docNumber = doc.doc_number || '';
+        const docType = doc.doc_type || '';
+        const partyOne = doc.party_one || '';
+        const partyTwo = doc.party_two || '';
+        const status = doc.status || '';
+        const issueDate = toInputDate(doc.issue_date);
+        const fileUrl = doc.file_url || '';
+        const partyOneId = doc.party_one_id || '';
+        const partyTwoId = doc.party_two_id || '';
+        const verifyToken = doc.verify_token || '';
 
-            tableHTML += `</tbody></table>`;
-            resultsContainer.innerHTML = tableHTML;
-        };
+        // Each input has data-field attribute and data-original to allow cancel
+        tableHTML += `
+            <tr data-doc="${docNumber}">
+                <td>
+                    <input type="text" data-field="doc_number" value="${escapeHtml(docNumber)}" readonly class="w-full" />
+                </td>
+                <td>
+                    <input type="text" data-field="doc_type" value="${escapeHtml(docType)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="party_one" value="${escapeHtml(partyOne)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="party_two" value="${escapeHtml(partyTwo)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="status" value="${escapeHtml(status)}" readonly />
+                </td>
+                <td>
+                    <input type="date" data-field="issue_date" value="${issueDate}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="file_url" value="${escapeHtml(fileUrl)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="party_one_id" value="${escapeHtml(partyOneId)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="party_two_id" value="${escapeHtml(partyTwoId)}" readonly />
+                </td>
+                <td>
+                    <input type="text" data-field="verify_token" value="${escapeHtml(verifyToken)}" readonly />
+                </td>
+                <td class="actions">
+                    <button class="edit-btn bg-yellow-500 text-white px-3 py-1 rounded" data-id="${escapeAttr(docNumber)}">تعديل</button>
+                    <button class="save-btn bg-green-600 text-white px-3 py-1 rounded hidden" data-id="${escapeAttr(docNumber)}">حفظ</button>
+                    <button class="cancel-btn bg-gray-400 text-white px-3 py-1 rounded hidden">إلغاء</button>
+                    <button class="delete-btn bg-red-500 text-white px-3 py-1 rounded" data-id="${escapeAttr(docNumber)}">حذف</button>
+                </td>
+            </tr>
+        `;
+    });
 
-        // ✅ عند البحث
-        searchForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const query = searchInput.value;
-            const response = await fetch('/api/search-documents', {
+    tableHTML += `</tbody></table>`;
+    resultsContainer.innerHTML = tableHTML;
+
+    // store original values for each row (for cancel)
+    document.querySelectorAll('tr[data-doc]').forEach(row => {
+        const inputs = row.querySelectorAll('input[data-field]');
+        inputs.forEach(inp => {
+            inp.dataset.original = inp.value;
+        });
+    });
+}
+
+// escape helpers to avoid injection in value attributes
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+function escapeAttr(str){ return escapeHtml(str); }
+
+// handle form submit (search)
+searchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = searchInput.value;
+    try {
+        const res = await myFetch('/api/search-documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q })
+        });
+        if (!res.ok) {
+            if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
+            const err = await res.json().catch(()=>({message:'خطأ'}));
+            resultsContainer.innerHTML = `<p class="text-red-500">${err.message}</p>`;
+            return;
+        }
+        const data = await res.json();
+        displayResults(data);
+    } catch (err) {
+        console.error(err);
+        resultsContainer.innerHTML = `<p class="text-red-500">خطأ في الاتصال بالسيرفر.</p>`;
+    }
+});
+
+// delegate clicks for edit/save/cancel/delete
+resultsContainer.addEventListener('click', async (e) => {
+    const row = e.target.closest('tr[data-doc]');
+    if (!row) return;
+
+    // Edit
+    if (e.target.classList.contains('edit-btn')) {
+        toggleEditMode(row, true);
+        return;
+    }
+
+    // Cancel
+    if (e.target.classList.contains('cancel-btn')) {
+        // revert values from data-original
+        row.querySelectorAll('input[data-field]').forEach(inp => {
+            inp.value = inp.dataset.original || '';
+            setReadonly(inp, true);
+        });
+        toggleEditMode(row, false);
+        return;
+    }
+
+    // Save
+    if (e.target.classList.contains('save-btn')) {
+        const docNumberInput = row.querySelector('input[data-field="doc_number"]');
+        const doc_number = docNumberInput.value.trim();
+        if (!doc_number) { alert('رقم المستند مطلوب'); return; }
+
+        // gather all fields
+        const payload = {};
+        row.querySelectorAll('input[data-field]').forEach(inp => {
+            const field = inp.getAttribute('data-field');
+            let val = inp.value;
+            // for empty strings, send null? keep string to match server behavior
+            payload[field] = val;
+        });
+
+        try {
+            const res = await myFetch('/add-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify(payload)
             });
-            const data = await response.json();
-            displayResults(data);
-        });
-
-        // ✅ التعامل مع أزرار التعديل والحذف
-        resultsContainer.addEventListener("click", async (e) => {
-            if (e.target.classList.contains("delete-btn")) {
-                const docNumber = e.target.getAttribute("data-id");
-                if (confirm("هل أنت متأكد من حذف المستند؟")) {
-                    const response = await fetch(`/api/delete-document/${docNumber}`, { method: "DELETE" });
-                    const result = await response.json();
-                    alert(result.message);
-                    fetchAllDocuments(); // تحديث الجدول
-                }
+            if (!res.ok) {
+                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
+                const text = await res.text().catch(()=> 'خطأ');
+                alert('خطأ عند الحفظ: ' + text);
+                return;
             }
+            const text = await res.text().catch(()=> 'تم الحفظ');
+            alert(text);
+            await fetchAllDocuments();
+        } catch (err) {
+            console.error(err);
+            alert('خطأ أثناء الحفظ.');
+        }
+        return;
+    }
 
-            if (e.target.classList.contains("edit-btn")) {
-                const docNumber = e.target.getAttribute("data-id");
-                const newStatus = prompt("أدخل الحالة الجديدة:");
-                if (newStatus) {
-                    const response = await fetch("/add-document", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ doc_number: docNumber, status: newStatus })
-                    });
-                    const result = await response.text();
-                    alert(result);
-                    fetchAllDocuments(); // تحديث الجدول
-                }
+    // Delete
+    if (e.target.classList.contains('delete-btn')) {
+        const docNumber = e.target.getAttribute('data-id');
+        if (!confirm('هل أنت متأكد من حذف المستند؟')) return;
+        try {
+            const res = await myFetch(`/api/delete-document/${encodeURIComponent(docNumber)}`, {
+                method: 'DELETE'
+            });
+            if (!res.ok) {
+                if (res.status === 401) { alert('غير مصدق. الرجاء تسجيل الدخول.'); window.location.href = '/admin'; return; }
+                const err = await res.json().catch(()=>({message:'خطأ'}));
+                alert(err.message || 'فشل الحذف');
+                return;
             }
-        });
+            const result = await res.json();
+            alert(result.message || 'تم الحذف');
+            await fetchAllDocuments();
+        } catch (err) {
+            console.error(err);
+            alert('خطأ أثناء الحذف.');
+        }
+        return;
+    }
+});
 
-        // ✅ تحميل جميع المستندات أول ما تفتح الصفحة
-        window.onload = fetchAllDocuments;
-    </script>
+// helper: enable/disable inputs and show/hide buttons
+function toggleEditMode(row, editing) {
+    const inputs = row.querySelectorAll('input[data-field]');
+    inputs.forEach(inp => setReadonly(inp, !editing));
+
+    const editBtn = row.querySelector('.edit-btn');
+    const saveBtn = row.querySelector('.save-btn');
+    const cancelBtn = row.querySelector('.cancel-btn');
+
+    if (editing) {
+        editBtn.classList.add('hidden');
+        saveBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
+
+        // add editable class for styling
+        inputs.forEach(i => i.classList.add('editable'));
+
+        // store original values if not already stored
+        inputs.forEach(inp => {
+            if (typeof inp.dataset.original === 'undefined') inp.dataset.original = inp.value;
+        });
+    } else {
+        editBtn.classList.remove('hidden');
+        saveBtn.classList.add('hidden');
+        cancelBtn.classList.add('hidden');
+
+        inputs.forEach(i => i.classList.remove('editable'));
+    }
+}
+
+function setReadonly(inp, ro) {
+    if (ro) {
+        inp.setAttribute('readonly', 'readonly');
+        // remove type=date special UI? keep date readonly supported
+    } else {
+        inp.removeAttribute('readonly');
+    }
+}
+
+// initial load
+window.onload = fetchAllDocuments;
+</script>
 </body>
 </html>
