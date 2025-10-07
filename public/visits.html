@@ -47,20 +47,28 @@
         const tbody = document.querySelector("#visitsTable tbody");
         tbody.innerHTML = "";
 
-        data.forEach(v => {
+        // تجاهل الروابط غير المهمة (ملفات ثابتة)
+        const ignoredExt = [".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".ttf", ".woff", ".woff2", ".eot", ".otf"];
+        const filtered = data.filter(v => {
+          if (!v.url) return false;
+          const lower = v.url.toLowerCase();
+          return !ignoredExt.some(ext => lower.endsWith(ext)) && !lower.includes("/fonts/");
+        });
+
+        filtered.forEach(v => {
           const tr = document.createElement("tr");
           tr.className = "hover:bg-gray-50 border-b border-gray-200";
           tr.innerHTML = `
             <td class="p-2">${v.created_at ? new Date(v.created_at).toLocaleString("ar-EG") : "-"}</td>
             <td class="p-2 font-semibold">${v.user_name || "-"}</td>
-            <td class="p-2">${v.country || "-"} ${v.country_code ? `(${v.country_code})` : ""}</td>
+            <td class="p-2">${v.country || "-"} ${v.country_code ? \`(\${v.country_code})\` : ""}</td>
             <td class="p-2">${v.ip || "-"}</td>
             <td class="p-2 text-blue-600 break-all">${v.url || "-"}</td>
           `;
           tbody.appendChild(tr);
         });
 
-        document.getElementById("status").textContent = `تم تحميل ${data.length} زيارة`;
+        document.getElementById("status").textContent = `تم تحميل ${filtered.length} زيارة بعد التصفية`;
       } catch (err) {
         document.getElementById("status").textContent = "حدث خطأ أثناء جلب البيانات";
         console.error(err);
