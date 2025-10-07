@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>سجل الزيارات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: "Cairo", sans-serif; }
+    table { border-collapse: collapse; width: 100%; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">📋 سجل الزيارات</h1>
+      <input id="searchInput" type="text" placeholder="🔍 بحث..." 
+             class="border rounded-lg px-3 py-2 text-sm w-64 focus:ring-2 focus:ring-blue-500 outline-none" 
+             onkeyup="filterRows()" />
+    </div>
+
+    <div class="overflow-x-auto border rounded-lg">
+      <table id="visitsTable" class="text-sm text-right w-full">
+        <thead class="bg-gray-200 text-gray-700">
+          <tr>
+            <th class="p-2">🕓 الوقت</th>
+            <th class="p-2">👤 المستخدم</th>
+            <th class="p-2">🌍 الدولة</th>
+            <th class="p-2">💻 IP</th>
+            <th class="p-2">🔗 الصفحة</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700"></tbody>
+      </table>
+    </div>
+
+    <p id="status" class="text-center text-gray-400 text-xs mt-3">جاري تحميل البيانات...</p>
+  </div>
+
+  <script>
+    async function loadVisits() {
+      try {
+        const res = await fetch("/api/visits");
+        if (!res.ok) throw new Error("Unauthorized or failed to fetch");
+        const data = await res.json();
+
+        const tbody = document.querySelector("#visitsTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(v => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-gray-50 border-b border-gray-200";
+          tr.innerHTML = `
+            <td class="p-2">${v.created_at ? new Date(v.created_at).toLocaleString("ar-EG") : "-"}</td>
+            <td class="p-2 font-semibold">${v.user_name || "-"}</td>
+            <td class="p-2">${v.country || "-"} ${v.country_code ? `(${v.country_code})` : ""}</td>
+            <td class="p-2">${v.ip || "-"}</td>
+            <td class="p-2 text-blue-600 break-all">${v.url || "-"}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById("status").textContent = `تم تحميل ${data.length} زيارة`;
+      } catch (err) {
+        document.getElementById("status").textContent = "حدث خطأ أثناء جلب البيانات";
+        console.error(err);
+      }
+    }
+
+    function filterRows() {
+      const input = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#visitsTable tbody tr");
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+
+    loadVisits();
+  </script>
+</body>
+</html>

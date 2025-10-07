@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import session from "express-session";
+import geoip from "geoip-lite";
+import requestIp from "request-ip";
 
 // تهيئة dotenv لقراءة متغيرات البيئة المحلية
 dotenv.config();
@@ -71,6 +73,61 @@ pool.on("error", (err) => {
 });
 
 // -----------------------------------------
+// 📊 تسجيل الزيارات (خاص بالمسارات التي تحتوي توكن /verify/:token)
+// -----------------------------------------
+// نسجل فقط عند الوصول لمسار /verify/:token حتى لا نغرق الجدول بطلبات غير مهمة
+app.use(async (req, res, next) => {
+    try {
+        // فقط نسجل لو المسار يبدأ ب /verify/
+        if (!req.path.startsWith("/verify/")) return next();
+
+        // نأخذ التوكن من المسار
+        const tokenMatch = req.path.match(/^\/verify\/([^\/\?\#]+)/);
+        if (!tokenMatch) return next();
+        const token = tokenMatch[1] || null;
+
+        // الحصول على IP الحقيقي مع التعامل مع proxies
+        let ip = requestIp.getClientIp(req) || req.headers["x-forwarded-for"]?.split(",")[0] || req.socket?.remoteAddress || "unknown";
+        // لو جاء IPv4-mapped IPv6 مثل ::ffff:127.0.0.1 نزيل البادئة
+        if (typeof ip === "string" && ip.startsWith("::ffff:")) {
+            ip = ip.split("::ffff:").pop();
+        }
+
+        const userAgent = req.get("User-Agent") || null;
+        const referrer = req.get("Referer") || null;
+        const fullUrl = req.protocol + "://" + req.get("host") + req.originalUrl;
+
+        // local geo lookup باستخدام geoip-lite (لا يعتمد على API خارجي)
+        const geo = geoip.lookup(ip) || null;
+        const country_code = geo?.country || null;
+        // محاولة للحصول على اسم الدولة باستخدام Intl (لو متوفر)، وإلا نعرض رمز البلد
+        let country = country_code;
+        try {
+            if (country_code && typeof Intl === "object" && Intl.DisplayNames) {
+                const dn = new Intl.DisplayNames(['en'], { type: 'region' });
+                const name = dn.of(country_code);
+                if (name) country = name;
+            }
+        } catch (e) {
+            // تجاهل، سنستخدم رمز البلد كاسم احتياطي
+        }
+
+        // إدخال السجل في قاعدة البيانات
+        await pool.query(
+            `INSERT INTO visit_logs (token, url, ip, country, country_code, user_agent, referrer)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [token, fullUrl, ip, country, country_code, userAgent, referrer]
+        );
+
+        console.log(`📥 Logged visit for token=${token} ip=${ip} country=${country || 'Unknown'}`);
+    } catch (err) {
+        console.error("⚠️ Error while logging visit:", err?.message || err);
+        // لا نمنع الطلب في حال فشل التسجيل
+    }
+    next();
+});
+
+// -----------------------------------------
 // الراوتات العامة
 // -----------------------------------------
 app.get("/", (req, res) => {
@@ -124,6 +181,120 @@ app.get("/admin", (req, res) => {
     console.log("❌ Admin access denied: Not authenticated. Redirecting to login page.");
     res.sendFile(path.join(__dirname, "public", "login.html"));
 });
+
+// -----------------------------------------
+// ❗ صفحة عرض السجلات للمشرف (محمية بالـ session الموجود عندك)
+// -----------------------------------------
+app.get("/admin/visits", async (req, res) => {
+  if (!req.session.isAuthenticated) {
+    console.log("❌ Unauthorized access to /admin/visits");
+    return res.status(401).send("Unauthorized");
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT v.*, d.party_two AS user_name
+      FROM visit_logs v
+      LEFT JOIN documents d ON d.verify_token = v.token
+      ORDER BY v.created_at DESC
+      LIMIT 1000
+    `);
+
+    const rows = result.rows.map((r) => `
+      <tr class="hover:bg-gray-50 border-b border-gray-200">
+        <td class="px-3 py-2 text-sm text-gray-700 whitespace-nowrap">${r.created_at ? new Date(r.created_at).toLocaleString("ar-EG") : "-"}</td>
+        <td class="px-3 py-2 font-semibold text-gray-800">${r.user_name || "-"}</td>
+        <td class="px-3 py-2 text-blue-600 break-all">${r.url || "-"}</td>
+        <td class="px-3 py-2 text-gray-700">${r.ip || "-"}</td>
+        <td class="px-3 py-2">${r.country || "-"} ${r.country_code ? `(${r.country_code})` : ""}</td>
+        <td class="px-3 py-2 text-gray-500 text-sm">${r.referrer || "-"}</td>
+        <td class="px-3 py-2 text-gray-400 text-xs">${r.user_agent?.slice(0, 100) || "-"}</td>
+      </tr>
+    `).join("");
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>سجل الزيارات</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+          function searchTable() {
+            const input = document.getElementById("searchInput").value.toLowerCase();
+            const rows = document.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+              const text = row.innerText.toLowerCase();
+              row.style.display = text.includes(input) ? "" : "none";
+            });
+          }
+        </script>
+      </head>
+      <body class="bg-gray-100 font-sans">
+        <div class="max-w-7xl mx-auto mt-10 bg-white shadow rounded-2xl p-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">📊 سجل الزيارات</h1>
+            <div class="flex gap-2 items-center">
+              <input id="searchInput" onkeyup="searchTable()" type="text" placeholder="🔍 ابحث عن مستخدم أو IP أو دولة..." class="border rounded-lg px-3 py-1.5 text-sm w-64 focus:ring-2 focus:ring-blue-500 outline-none" />
+              <a href="/admin" class="text-blue-600 hover:underline text-sm">العودة للوحة التحكم</a>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border text-sm text-right">
+              <thead class="bg-gray-200 text-gray-700">
+                <tr>
+                  <th class="p-2">🕓 التاريخ</th>
+                  <th class="p-2">👤 المستخدم</th>
+                  <th class="p-2">🔗 الصفحة</th>
+                  <th class="p-2">💻 IP</th>
+                  <th class="p-2">🌍 الدولة</th>
+                  <th class="p-2">↩️ الإحالة</th>
+                  <th class="p-2">📱 المتصفح / النظام</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+          <p class="text-center text-gray-400 text-xs mt-4">عرض آخر ${result.rows.length} زيارة</p>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error("❌ Error fetching visit logs:", err);
+    res.status(500).send("Error loading visit logs.");
+  }
+});
+
+
+app.get("/visits", (req, res) => {
+  if (req.session.isAuthenticated) {
+    return res.sendFile(path.join(__dirname, "public", "visits.html"));
+  }
+  res.status(401).send("Unauthorized");
+});
+
+app.get("/api/visits", async (req, res) => {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const { rows } = await pool.query(`
+      SELECT v.*, d.party_two AS user_name
+      FROM visit_logs v
+      LEFT JOIN documents d ON d.verify_token = v.token
+      ORDER BY v.created_at DESC
+      LIMIT 500
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ Error fetching visits:", err);
+    res.status(500).json({ error: "Failed to fetch visits" });
+  }
+});
+
 
 // راوت جديد لصفحة البحث (Admin only)
 app.get("/search", (req, res) => {
