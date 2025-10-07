@@ -41,20 +41,22 @@
   <script>
     function detectDevice(ua) {
       if (!ua) return "غير معروف";
-      ua = ua.toLowerCase();
-      if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) return "📱 موبايل";
-      if (ua.includes("windows") || ua.includes("macintosh") || ua.includes("linux")) return "💻 كمبيوتر";
+      const lower = ua.toLowerCase();
+      if (lower.includes("mobile") || lower.includes("android") || lower.includes("iphone")) return "📱 موبايل";
+      if (lower.includes("windows") || lower.includes("macintosh") || lower.includes("linux")) return "💻 كمبيوتر";
       return "📟 جهاز آخر";
     }
 
     async function loadVisits() {
+      const status = document.getElementById("status");
+      const tbody = document.querySelector("#visitsTable tbody");
+      status.textContent = "⏳ جاري تحميل البيانات...";
+      tbody.innerHTML = "";
+
       try {
         const res = await fetch("/api/visits");
         if (!res.ok) throw new Error("Unauthorized or failed to fetch");
         const data = await res.json();
-
-        const tbody = document.querySelector("#visitsTable tbody");
-        tbody.innerHTML = "";
 
         // تجاهل الملفات الثابتة
         const ignoredExt = [".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".ttf", ".woff", ".woff2", ".eot", ".otf"];
@@ -67,22 +69,31 @@
         filtered.forEach(v => {
           const tr = document.createElement("tr");
           tr.className = "hover:bg-gray-50 border-b border-gray-200";
+
+          const createdAt = v.created_at ? new Date(v.created_at).toLocaleString("ar-EG") : "-";
+          const user = v.user_name || "-";
+          const country = v.country || "-";
+          const code = v.country_code ? `(${v.country_code})` : "";
+          const ip = v.ip || "-";
+          const url = v.url || "-";
           const deviceType = detectDevice(v.user_agent);
+
           tr.innerHTML = `
-            <td class="p-2">${v.created_at ? new Date(v.created_at).toLocaleString("ar-EG") : "-"}</td>
-            <td class="p-2 font-semibold">${v.user_name || "-"}</td>
-            <td class="p-2">${v.country || "-"} ${v.country_code ? \`(\${v.country_code})\` : ""}</td>
+            <td class="p-2">${createdAt}</td>
+            <td class="p-2 font-semibold">${user}</td>
+            <td class="p-2">${country} ${code}</td>
             <td class="p-2">${deviceType}</td>
-            <td class="p-2">${v.ip || "-"}</td>
-            <td class="p-2 text-blue-600 break-all">${v.url || "-"}</td>
+            <td class="p-2">${ip}</td>
+            <td class="p-2 text-blue-600 break-all">${url}</td>
           `;
+
           tbody.appendChild(tr);
         });
 
-        document.getElementById("status").textContent = `تم تحميل ${filtered.length} زيارة بعد التصفية`;
+        status.textContent = `✅ تم تحميل ${filtered.length} زيارة بعد التصفية`;
       } catch (err) {
-        document.getElementById("status").textContent = "حدث خطأ أثناء جلب البيانات";
-        console.error(err);
+        console.error("Error loading visits:", err);
+        status.textContent = "❌ حدث خطأ أثناء جلب البيانات";
       }
     }
 
