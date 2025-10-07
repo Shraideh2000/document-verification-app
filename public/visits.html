@@ -11,7 +11,7 @@
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-6">
-  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6">
+  <div class="max-w-7xl mx-auto bg-white shadow-lg rounded-2xl p-6">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-800">📋 سجل الزيارات</h1>
       <input id="searchInput" type="text" placeholder="🔍 بحث..." 
@@ -26,7 +26,8 @@
             <th class="p-2">🕓 الوقت</th>
             <th class="p-2">👤 المستخدم</th>
             <th class="p-2">🌍 الدولة</th>
-            <th class="p-2">💻 IP</th>
+            <th class="p-2">💻 الجهاز</th>
+            <th class="p-2">🔢 IP</th>
             <th class="p-2">🔗 الصفحة</th>
           </tr>
         </thead>
@@ -38,6 +39,14 @@
   </div>
 
   <script>
+    function detectDevice(ua) {
+      if (!ua) return "غير معروف";
+      ua = ua.toLowerCase();
+      if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) return "📱 موبايل";
+      if (ua.includes("windows") || ua.includes("macintosh") || ua.includes("linux")) return "💻 كمبيوتر";
+      return "📟 جهاز آخر";
+    }
+
     async function loadVisits() {
       try {
         const res = await fetch("/api/visits");
@@ -47,7 +56,7 @@
         const tbody = document.querySelector("#visitsTable tbody");
         tbody.innerHTML = "";
 
-        // تجاهل الروابط غير المهمة (ملفات ثابتة)
+        // تجاهل الملفات الثابتة
         const ignoredExt = [".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".ttf", ".woff", ".woff2", ".eot", ".otf"];
         const filtered = data.filter(v => {
           if (!v.url) return false;
@@ -58,10 +67,12 @@
         filtered.forEach(v => {
           const tr = document.createElement("tr");
           tr.className = "hover:bg-gray-50 border-b border-gray-200";
+          const deviceType = detectDevice(v.user_agent);
           tr.innerHTML = `
             <td class="p-2">${v.created_at ? new Date(v.created_at).toLocaleString("ar-EG") : "-"}</td>
             <td class="p-2 font-semibold">${v.user_name || "-"}</td>
             <td class="p-2">${v.country || "-"} ${v.country_code ? \`(\${v.country_code})\` : ""}</td>
+            <td class="p-2">${deviceType}</td>
             <td class="p-2">${v.ip || "-"}</td>
             <td class="p-2 text-blue-600 break-all">${v.url || "-"}</td>
           `;
